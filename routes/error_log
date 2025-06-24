@@ -1,0 +1,16 @@
+[02-Aug-2024 13:10:39 UTC] PHP Fatal error:  Uncaught Error: Class "Illuminate\Support\Facades\Route" not found in /home/zetdsqxs/music.zetdigi.com/backend/routes/api.php:40
+Stack trace:
+#0 {main}
+  thrown in /home/zetdsqxs/music.zetdigi.com/backend/routes/api.php on line 40
+[12-Aug-2024 05:44:31 UTC] PHP Fatal error:  Uncaught Error: Class "Illuminate\Support\Facades\Route" not found in /home/zetdsqxs/music.zetdigi.com/backend/routes/old-api.php:40
+Stack trace:
+#0 {main}
+  thrown in /home/zetdsqxs/music.zetdigi.com/backend/routes/old-api.php on line 40
+[12-Aug-2024 06:19:40 UTC] PHP Fatal error:  Uncaught Error: Class "Illuminate\Support\Facades\Artisan" not found in /home/zetdsqxs/music.zetdigi.com/backend/routes/console.php:6
+Stack trace:
+#0 {main}
+  thrown in /home/zetdsqxs/music.zetdigi.com/backend/routes/console.php on line 6
+[21-Aug-2024 01:06:36 UTC] PHP Fatal error:  Uncaught Error: Class "Illuminate\Support\Facades\Route" not found in /home/zetdsqxs/music.zetdigi.com/backend/routes/api.php:46
+Stack trace:
+#0 {main}
+  thrown in /home/zetdsqxs/music.zetdigi.com/backend/routes/api.php on line 46

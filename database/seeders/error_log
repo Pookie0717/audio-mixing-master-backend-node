@@ -1,0 +1,112 @@
+[12-Aug-2024 16:46:29 UTC] PHP Fatal error:  Uncaught Error: Class "Illuminate\Database\Seeder" not found in /home/zetdsqxs/music.zetdigi.com/backend/database/seeders/GiftOrderSeeder.php:9
+Stack trace:
+#0 {main}
+  thrown in /home/zetdsqxs/music.zetdigi.com/backend/database/seeders/GiftOrderSeeder.php on line 9
+[12-Aug-2024 17:43:40 UTC] PHP Fatal error:  Uncaught Error: Class "Illuminate\Database\Seeder" not found in /home/zetdsqxs/music.zetdigi.com/backend/database/seeders/LabelSeeder.php:9
+Stack trace:
+#0 {main}
+  thrown in /home/zetdsqxs/music.zetdigi.com/backend/database/seeders/LabelSeeder.php on line 9
+[12-Aug-2024 17:44:00 UTC] PHP Fatal error:  Uncaught Error: Class "Illuminate\Database\Seeder" not found in /home/zetdsqxs/music.zetdigi.com/backend/database/seeders/DatabaseSeeder.php:9
+Stack trace:
+#0 {main}
+  thrown in /home/zetdsqxs/music.zetdigi.com/backend/database/seeders/DatabaseSeeder.php on line 9
+[12-Aug-2024 17:44:40 UTC] PHP Fatal error:  Uncaught Error: Class "Illuminate\Database\Seeder" not found in /home/zetdsqxs/music.zetdigi.com/backend/database/seeders/TestimonialSeeder.php:8
+Stack trace:
+#0 {main}
+  thrown in /home/zetdsqxs/music.zetdigi.com/backend/database/seeders/TestimonialSeeder.php on line 8
+[12-Aug-2024 17:45:00 UTC] PHP Fatal error:  Uncaught Error: Class "Illuminate\Database\Seeder" not found in /home/zetdsqxs/music.zetdigi.com/backend/database/seeders/CategorySeeder.php:9
+Stack trace:
+#0 {main}
+  thrown in /home/zetdsqxs/music.zetdigi.com/backend/database/seeders/CategorySeeder.php on line 9
+[12-Aug-2024 17:45:39 UTC] PHP Fatal error:  Uncaught Error: Class "Illuminate\Database\Seeder" not found in /home/zetdsqxs/music.zetdigi.com/backend/database/seeders/UserSeeder.php:12
+Stack trace:
+#0 {main}
+  thrown in /home/zetdsqxs/music.zetdigi.com/backend/database/seeders/UserSeeder.php on line 12
+[12-Aug-2024 17:49:43 UTC] PHP Fatal error:  Uncaught Error: Class "Illuminate\Database\Seeder" not found in /home/zetdsqxs/music.zetdigi.com/backend/database/seeders/FavouriteSeeder.php:8
+Stack trace:
+#0 {main}
+  thrown in /home/zetdsqxs/music.zetdigi.com/backend/database/seeders/FavouriteSeeder.php on line 8
+[12-Aug-2024 17:59:57 UTC] PHP Fatal error:  Uncaught Error: Class "Illuminate\Database\Seeder" not found in /home/zetdsqxs/music.zetdigi.com/backend/database/seeders/EmailSubcriberSeeder.php:8
+Stack trace:
+#0 {main}
+  thrown in /home/zetdsqxs/music.zetdigi.com/backend/database/seeders/EmailSubcriberSeeder.php on line 8
+[12-Aug-2024 18:05:42 UTC] PHP Fatal error:  Uncaught Error: Class "Illuminate\Database\Seeder" not found in /home/zetdsqxs/music.zetdigi.com/backend/database/seeders/OrderSeeder.php:10
+Stack trace:
+#0 {main}
+  thrown in /home/zetdsqxs/music.zetdigi.com/backend/database/seeders/OrderSeeder.php on line 10
+[12-Aug-2024 20:00:29 UTC] PHP Fatal error:  Uncaught Error: Class "Illuminate\Database\Seeder" not found in /home/zetdsqxs/music.zetdigi.com/backend/database/seeders/ServiceSeeder.php:8
+Stack trace:
+#0 {main}
+  thrown in /home/zetdsqxs/music.zetdigi.com/backend/database/seeders/ServiceSeeder.php on line 8
+[13-Aug-2024 06:54:56 UTC] PHP Fatal error:  Uncaught Error: Class "Illuminate\Database\Seeder" not found in /home/zetdsqxs/music.zetdigi.com/backend/database/seeders/SampleSeeder.php:9
+Stack trace:
+#0 {main}
+  thrown in /home/zetdsqxs/music.zetdigi.com/backend/database/seeders/SampleSeeder.php on line 9
+[13-Aug-2024 11:39:31 UTC] PHP Fatal error:  Uncaught Error: Class "Illuminate\Database\Seeder" not found in /home/zetdsqxs/music.zetdigi.com/backend/database/seeders/GallarySeeder.php:9
+Stack trace:
+#0 {main}
+  thrown in /home/zetdsqxs/music.zetdigi.com/backend/database/seeders/GallarySeeder.php on line 9
+[15-Aug-2024 06:45:09 UTC] PHP Fatal error:  Uncaught Error: Class "Illuminate\Database\Seeder" not found in /home/zetdsqxs/music.zetdigi.com/backend/database/seeders/SampleSeeder.php:9
+Stack trace:
+#0 {main}
+  thrown in /home/zetdsqxs/music.zetdigi.com/backend/database/seeders/SampleSeeder.php on line 9
+[15-Aug-2024 07:22:28 UTC] PHP Fatal error:  Uncaught Error: Class "Illuminate\Database\Seeder" not found in /home/zetdsqxs/music.zetdigi.com/backend/database/seeders/LabelSeeder.php:9
+Stack trace:
+#0 {main}
+  thrown in /home/zetdsqxs/music.zetdigi.com/backend/database/seeders/LabelSeeder.php on line 9
+[15-Aug-2024 07:24:33 UTC] PHP Fatal error:  Uncaught Error: Class "Illuminate\Database\Seeder" not found in /home/zetdsqxs/music.zetdigi.com/backend/database/seeders/TestimonialSeeder.php:8
+Stack trace:
+#0 {main}
+  thrown in /home/zetdsqxs/music.zetdigi.com/backend/database/seeders/TestimonialSeeder.php on line 8
+[15-Aug-2024 07:26:35 UTC] PHP Fatal error:  Uncaught Error: Class "Illuminate\Database\Seeder" not found in /home/zetdsqxs/music.zetdigi.com/backend/database/seeders/CategorySeeder.php:9
+Stack trace:
+#0 {main}
+  thrown in /home/zetdsqxs/music.zetdigi.com/backend/database/seeders/CategorySeeder.php on line 9
+[15-Aug-2024 10:12:32 UTC] PHP Fatal error:  Uncaught Error: Class "Illuminate\Database\Seeder" not found in /home/zetdsqxs/music.zetdigi.com/backend/database/seeders/GiftSeeder.php:9
+Stack trace:
+#0 {main}
+  thrown in /home/zetdsqxs/music.zetdigi.com/backend/database/seeders/GiftSeeder.php on line 9
+[15-Aug-2024 10:16:43 UTC] PHP Fatal error:  Uncaught Error: Class "Illuminate\Database\Seeder" not found in /home/zetdsqxs/music.zetdigi.com/backend/database/seeders/RoleAndPermissionSeeder.php:10
+Stack trace:
+#0 {main}
+  thrown in /home/zetdsqxs/music.zetdigi.com/backend/database/seeders/RoleAndPermissionSeeder.php on line 10
+[15-Aug-2024 13:30:22 UTC] PHP Fatal error:  Uncaught Error: Class "Illuminate\Database\Seeder" not found in /home/zetdsqxs/music.zetdigi.com/backend/database/seeders/EmailSubcriberSeeder.php:8
+Stack trace:
+#0 {main}
+  thrown in /home/zetdsqxs/music.zetdigi.com/backend/database/seeders/EmailSubcriberSeeder.php on line 8
+[15-Aug-2024 14:02:02 UTC] PHP Fatal error:  Uncaught Error: Class "Illuminate\Database\Seeder" not found in /home/zetdsqxs/music.zetdigi.com/backend/database/seeders/EmailSubcriberSeeder.php:8
+Stack trace:
+#0 {main}
+  thrown in /home/zetdsqxs/music.zetdigi.com/backend/database/seeders/EmailSubcriberSeeder.php on line 8
+[16-Aug-2024 20:20:49 UTC] PHP Fatal error:  Uncaught Error: Class "Illuminate\Database\Seeder" not found in /home/zetdsqxs/music.zetdigi.com/backend/database/seeders/ServiceSeeder.php:8
+Stack trace:
+#0 {main}
+  thrown in /home/zetdsqxs/music.zetdigi.com/backend/database/seeders/ServiceSeeder.php on line 8
+[17-Aug-2024 06:36:12 UTC] PHP Fatal error:  Uncaught Error: Class "Illuminate\Database\Seeder" not found in /home/zetdsqxs/music.zetdigi.com/backend/database/seeders/SampleSeeder.php:9
+Stack trace:
+#0 {main}
+  thrown in /home/zetdsqxs/music.zetdigi.com/backend/database/seeders/SampleSeeder.php on line 9
+[18-Aug-2024 03:42:50 UTC] PHP Fatal error:  Uncaught Error: Class "Illuminate\Database\Seeder" not found in /home/zetdsqxs/music.zetdigi.com/backend/database/seeders/FavouriteSeeder.php:8
+Stack trace:
+#0 {main}
+  thrown in /home/zetdsqxs/music.zetdigi.com/backend/database/seeders/FavouriteSeeder.php on line 8
+[18-Aug-2024 06:17:29 UTC] PHP Fatal error:  Uncaught Error: Class "Illuminate\Database\Seeder" not found in /home/zetdsqxs/music.zetdigi.com/backend/database/seeders/GallarySeeder.php:9
+Stack trace:
+#0 {main}
+  thrown in /home/zetdsqxs/music.zetdigi.com/backend/database/seeders/GallarySeeder.php on line 9
+[18-Aug-2024 18:32:22 UTC] PHP Fatal error:  Uncaught Error: Class "Illuminate\Database\Seeder" not found in /home/zetdsqxs/music.zetdigi.com/backend/database/seeders/RoleAndPermissionSeeder.php:10
+Stack trace:
+#0 {main}
+  thrown in /home/zetdsqxs/music.zetdigi.com/backend/database/seeders/RoleAndPermissionSeeder.php on line 10
+[18-Aug-2024 18:34:29 UTC] PHP Fatal error:  Uncaught Error: Class "Illuminate\Database\Seeder" not found in /home/zetdsqxs/music.zetdigi.com/backend/database/seeders/GiftSeeder.php:9
+Stack trace:
+#0 {main}
+  thrown in /home/zetdsqxs/music.zetdigi.com/backend/database/seeders/GiftSeeder.php on line 9
+[21-Aug-2024 03:12:36 UTC] PHP Fatal error:  Uncaught Error: Class "Illuminate\Database\Seeder" not found in /home/zetdsqxs/music.zetdigi.com/backend/database/seeders/DatabaseSeeder.php:9
+Stack trace:
+#0 {main}
+  thrown in /home/zetdsqxs/music.zetdigi.com/backend/database/seeders/DatabaseSeeder.php on line 9
+[21-Aug-2024 03:21:50 UTC] PHP Fatal error:  Uncaught Error: Class "Illuminate\Database\Seeder" not found in /home/zetdsqxs/music.zetdigi.com/backend/database/seeders/UserSeeder.php:12
+Stack trace:
+#0 {main}
+  thrown in /home/zetdsqxs/music.zetdigi.com/backend/database/seeders/UserSeeder.php on line 12

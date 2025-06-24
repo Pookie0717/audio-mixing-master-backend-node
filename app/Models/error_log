@@ -1,0 +1,316 @@
+[12-Aug-2024 16:54:50 UTC] PHP Fatal error:  Uncaught Error: Class "Illuminate\Database\Eloquent\Model" not found in /home/zetdsqxs/music.zetdigi.com/backend/app/Models/chat.php:8
+Stack trace:
+#0 {main}
+  thrown in /home/zetdsqxs/music.zetdigi.com/backend/app/Models/chat.php on line 8
+[12-Aug-2024 17:35:43 UTC] PHP Fatal error:  Uncaught Error: Class "Illuminate\Database\Eloquent\Model" not found in /home/zetdsqxs/music.zetdigi.com/backend/app/Models/Favourite.php:8
+Stack trace:
+#0 {main}
+  thrown in /home/zetdsqxs/music.zetdigi.com/backend/app/Models/Favourite.php on line 8
+[12-Aug-2024 17:35:43 UTC] PHP Fatal error:  Uncaught Error: Class "Illuminate\Database\Eloquent\Model" not found in /home/zetdsqxs/music.zetdigi.com/backend/app/Models/Label.php:8
+Stack trace:
+#0 {main}
+  thrown in /home/zetdsqxs/music.zetdigi.com/backend/app/Models/Label.php on line 8
+[12-Aug-2024 17:56:35 UTC] PHP Fatal error:  Uncaught Error: Class "Illuminate\Database\Eloquent\Model" not found in /home/zetdsqxs/music.zetdigi.com/backend/app/Models/message.php:8
+Stack trace:
+#0 {main}
+  thrown in /home/zetdsqxs/music.zetdigi.com/backend/app/Models/message.php on line 8
+[12-Aug-2024 17:56:55 UTC] PHP Fatal error:  Uncaught Error: Class "Illuminate\Database\Eloquent\Model" not found in /home/zetdsqxs/music.zetdigi.com/backend/app/Models/ServicesPromoCode.php:8
+Stack trace:
+#0 {main}
+  thrown in /home/zetdsqxs/music.zetdigi.com/backend/app/Models/ServicesPromoCode.php on line 8
+[12-Aug-2024 17:57:37 UTC] PHP Fatal error:  Uncaught Error: Class "Illuminate\Database\Eloquent\Model" not found in /home/zetdsqxs/music.zetdigi.com/backend/app/Models/Service.php:8
+Stack trace:
+#0 {main}
+  thrown in /home/zetdsqxs/music.zetdigi.com/backend/app/Models/Service.php on line 8
+[12-Aug-2024 17:57:56 UTC] PHP Fatal error:  Uncaught Error: Class "Illuminate\Foundation\Auth\User" not found in /home/zetdsqxs/music.zetdigi.com/backend/app/Models/User.php:13
+Stack trace:
+#0 {main}
+  thrown in /home/zetdsqxs/music.zetdigi.com/backend/app/Models/User.php on line 13
+[12-Aug-2024 17:58:36 UTC] PHP Fatal error:  Uncaught Error: Class "Illuminate\Database\Eloquent\Model" not found in /home/zetdsqxs/music.zetdigi.com/backend/app/Models/Order.php:8
+Stack trace:
+#0 {main}
+  thrown in /home/zetdsqxs/music.zetdigi.com/backend/app/Models/Order.php on line 8
+[12-Aug-2024 17:59:17 UTC] PHP Fatal error:  Uncaught Error: Class "Illuminate\Database\Eloquent\Model" not found in /home/zetdsqxs/music.zetdigi.com/backend/app/Models/UploadLeadGeneration.php:8
+Stack trace:
+#0 {main}
+  thrown in /home/zetdsqxs/music.zetdigi.com/backend/app/Models/UploadLeadGeneration.php on line 8
+[12-Aug-2024 17:59:37 UTC] PHP Fatal error:  Uncaught Error: Class "Illuminate\Database\Eloquent\Model" not found in /home/zetdsqxs/music.zetdigi.com/backend/app/Models/GiftOrder.php:8
+Stack trace:
+#0 {main}
+  thrown in /home/zetdsqxs/music.zetdigi.com/backend/app/Models/GiftOrder.php on line 8
+[12-Aug-2024 17:59:58 UTC] PHP Fatal error:  Uncaught Error: Class "Illuminate\Database\Eloquent\Model" not found in /home/zetdsqxs/music.zetdigi.com/backend/app/Models/Payment.php:8
+Stack trace:
+#0 {main}
+  thrown in /home/zetdsqxs/music.zetdigi.com/backend/app/Models/Payment.php on line 8
+[12-Aug-2024 18:00:17 UTC] PHP Fatal error:  Uncaught Error: Class "Illuminate\Database\Eloquent\Model" not found in /home/zetdsqxs/music.zetdigi.com/backend/app/Models/Coupon.php:8
+Stack trace:
+#0 {main}
+  thrown in /home/zetdsqxs/music.zetdigi.com/backend/app/Models/Coupon.php on line 8
+[12-Aug-2024 18:00:38 UTC] PHP Fatal error:  Uncaught Error: Class "Illuminate\Database\Eloquent\Model" not found in /home/zetdsqxs/music.zetdigi.com/backend/app/Models/OrderCoupon.php:8
+Stack trace:
+#0 {main}
+  thrown in /home/zetdsqxs/music.zetdigi.com/backend/app/Models/OrderCoupon.php on line 8
+[12-Aug-2024 18:00:58 UTC] PHP Fatal error:  Uncaught Error: Class "Illuminate\Database\Eloquent\Model" not found in /home/zetdsqxs/music.zetdigi.com/backend/app/Models/Gift.php:8
+Stack trace:
+#0 {main}
+  thrown in /home/zetdsqxs/music.zetdigi.com/backend/app/Models/Gift.php on line 8
+[12-Aug-2024 18:01:18 UTC] PHP Fatal error:  Uncaught Error: Class "Illuminate\Database\Eloquent\Model" not found in /home/zetdsqxs/music.zetdigi.com/backend/app/Models/OrderHasService.php:8
+Stack trace:
+#0 {main}
+  thrown in /home/zetdsqxs/music.zetdigi.com/backend/app/Models/OrderHasService.php on line 8
+[12-Aug-2024 18:01:39 UTC] PHP Fatal error:  Uncaught Error: Class "Illuminate\Database\Eloquent\Model" not found in /home/zetdsqxs/music.zetdigi.com/backend/app/Models/ContactLeadGeneration.php:8
+Stack trace:
+#0 {main}
+  thrown in /home/zetdsqxs/music.zetdigi.com/backend/app/Models/ContactLeadGeneration.php on line 8
+[12-Aug-2024 18:01:59 UTC] PHP Fatal error:  Uncaught Error: Class "Illuminate\Database\Eloquent\Model" not found in /home/zetdsqxs/music.zetdigi.com/backend/app/Models/LeadGeneration.php:8
+Stack trace:
+#0 {main}
+  thrown in /home/zetdsqxs/music.zetdigi.com/backend/app/Models/LeadGeneration.php on line 8
+[12-Aug-2024 18:02:19 UTC] PHP Fatal error:  Uncaught Error: Class "Illuminate\Database\Eloquent\Model" not found in /home/zetdsqxs/music.zetdigi.com/backend/app/Models/Cart.php:8
+Stack trace:
+#0 {main}
+  thrown in /home/zetdsqxs/music.zetdigi.com/backend/app/Models/Cart.php on line 8
+[12-Aug-2024 18:02:40 UTC] PHP Fatal error:  Uncaught Error: Class "Illuminate\Database\Eloquent\Model" not found in /home/zetdsqxs/music.zetdigi.com/backend/app/Models/Testimonial.php:8
+Stack trace:
+#0 {main}
+  thrown in /home/zetdsqxs/music.zetdigi.com/backend/app/Models/Testimonial.php on line 8
+[12-Aug-2024 18:15:13 UTC] PHP Fatal error:  Uncaught Error: Class "Illuminate\Database\Eloquent\Model" not found in /home/zetdsqxs/music.zetdigi.com/backend/app/Models/Cart.php:8
+Stack trace:
+#0 {main}
+  thrown in /home/zetdsqxs/music.zetdigi.com/backend/app/Models/Cart.php on line 8
+[12-Aug-2024 18:15:30 UTC] PHP Fatal error:  Uncaught Error: Class "Illuminate\Database\Eloquent\Model" not found in /home/zetdsqxs/music.zetdigi.com/backend/app/Models/Testimonial.php:8
+Stack trace:
+#0 {main}
+  thrown in /home/zetdsqxs/music.zetdigi.com/backend/app/Models/Testimonial.php on line 8
+[12-Aug-2024 18:29:08 UTC] PHP Fatal error:  Uncaught Error: Class "Illuminate\Database\Eloquent\Model" not found in /home/zetdsqxs/music.zetdigi.com/backend/app/Models/Favourite.php:8
+Stack trace:
+#0 {main}
+  thrown in /home/zetdsqxs/music.zetdigi.com/backend/app/Models/Favourite.php on line 8
+[12-Aug-2024 18:35:21 UTC] PHP Fatal error:  Uncaught Error: Class "Illuminate\Database\Eloquent\Model" not found in /home/zetdsqxs/music.zetdigi.com/backend/app/Models/Label.php:8
+Stack trace:
+#0 {main}
+  thrown in /home/zetdsqxs/music.zetdigi.com/backend/app/Models/Label.php on line 8
+[12-Aug-2024 21:31:58 UTC] PHP Fatal error:  Uncaught Error: Class "Illuminate\Database\Eloquent\Model" not found in /home/zetdsqxs/music.zetdigi.com/backend/app/Models/EmailSubcriber.php:8
+Stack trace:
+#0 {main}
+  thrown in /home/zetdsqxs/music.zetdigi.com/backend/app/Models/EmailSubcriber.php on line 8
+[12-Aug-2024 22:26:19 UTC] PHP Fatal error:  Uncaught Error: Class "Illuminate\Database\Eloquent\Model" not found in /home/zetdsqxs/music.zetdigi.com/backend/app/Models/Sample.php:8
+Stack trace:
+#0 {main}
+  thrown in /home/zetdsqxs/music.zetdigi.com/backend/app/Models/Sample.php on line 8
+[12-Aug-2024 22:27:42 UTC] PHP Fatal error:  Uncaught Error: Class "Illuminate\Database\Eloquent\Model" not found in /home/zetdsqxs/music.zetdigi.com/backend/app/Models/Testimonial.php:8
+Stack trace:
+#0 {main}
+  thrown in /home/zetdsqxs/music.zetdigi.com/backend/app/Models/Testimonial.php on line 8
+[13-Aug-2024 00:12:09 UTC] PHP Fatal error:  Uncaught Error: Class "Illuminate\Database\Eloquent\Model" not found in /home/zetdsqxs/music.zetdigi.com/backend/app/Models/Category.php:8
+Stack trace:
+#0 {main}
+  thrown in /home/zetdsqxs/music.zetdigi.com/backend/app/Models/Category.php on line 8
+[13-Aug-2024 00:38:31 UTC] PHP Fatal error:  Uncaught Error: Class "Illuminate\Database\Eloquent\Model" not found in /home/zetdsqxs/music.zetdigi.com/backend/app/Models/order_item.php:8
+Stack trace:
+#0 {main}
+  thrown in /home/zetdsqxs/music.zetdigi.com/backend/app/Models/order_item.php on line 8
+[13-Aug-2024 01:31:04 UTC] PHP Fatal error:  Uncaught Error: Class "Illuminate\Database\Eloquent\Model" not found in /home/zetdsqxs/music.zetdigi.com/backend/app/Models/tag.php:8
+Stack trace:
+#0 {main}
+  thrown in /home/zetdsqxs/music.zetdigi.com/backend/app/Models/tag.php on line 8
+[13-Aug-2024 02:04:23 UTC] PHP Fatal error:  Uncaught Error: Class "Illuminate\Database\Eloquent\Model" not found in /home/zetdsqxs/music.zetdigi.com/backend/app/Models/Sample.php:8
+Stack trace:
+#0 {main}
+  thrown in /home/zetdsqxs/music.zetdigi.com/backend/app/Models/Sample.php on line 8
+[13-Aug-2024 02:08:32 UTC] PHP Fatal error:  Uncaught Error: Class "Illuminate\Database\Eloquent\Model" not found in /home/zetdsqxs/music.zetdigi.com/backend/app/Models/PasswordResetToken.php:8
+Stack trace:
+#0 {main}
+  thrown in /home/zetdsqxs/music.zetdigi.com/backend/app/Models/PasswordResetToken.php on line 8
+[13-Aug-2024 02:36:41 UTC] PHP Fatal error:  Uncaught Error: Class "Illuminate\Database\Eloquent\Model" not found in /home/zetdsqxs/music.zetdigi.com/backend/app/Models/Subscription.php:8
+Stack trace:
+#0 {main}
+  thrown in /home/zetdsqxs/music.zetdigi.com/backend/app/Models/Subscription.php on line 8
+[13-Aug-2024 04:33:31 UTC] PHP Fatal error:  Uncaught Error: Class "Illuminate\Database\Eloquent\Model" not found in /home/zetdsqxs/music.zetdigi.com/backend/app/Models/UserCoupon.php:8
+Stack trace:
+#0 {main}
+  thrown in /home/zetdsqxs/music.zetdigi.com/backend/app/Models/UserCoupon.php on line 8
+[15-Aug-2024 08:44:08 UTC] PHP Fatal error:  Uncaught Error: Class "Illuminate\Database\Eloquent\Model" not found in /home/zetdsqxs/music.zetdigi.com/backend/app/Models/Cart.php:8
+Stack trace:
+#0 {main}
+  thrown in /home/zetdsqxs/music.zetdigi.com/backend/app/Models/Cart.php on line 8
+[15-Aug-2024 08:49:22 UTC] PHP Fatal error:  Uncaught Error: Class "Illuminate\Database\Eloquent\Model" not found in /home/zetdsqxs/music.zetdigi.com/backend/app/Models/Testimonial.php:8
+Stack trace:
+#0 {main}
+  thrown in /home/zetdsqxs/music.zetdigi.com/backend/app/Models/Testimonial.php on line 8
+[15-Aug-2024 08:53:33 UTC] PHP Fatal error:  Uncaught Error: Class "Illuminate\Database\Eloquent\Model" not found in /home/zetdsqxs/music.zetdigi.com/backend/app/Models/Service.php:8
+Stack trace:
+#0 {main}
+  thrown in /home/zetdsqxs/music.zetdigi.com/backend/app/Models/Service.php on line 8
+[15-Aug-2024 14:45:33 UTC] PHP Fatal error:  Uncaught Error: Class "Illuminate\Database\Eloquent\Model" not found in /home/zetdsqxs/music.zetdigi.com/backend/app/Models/order_item.php:8
+Stack trace:
+#0 {main}
+  thrown in /home/zetdsqxs/music.zetdigi.com/backend/app/Models/order_item.php on line 8
+[15-Aug-2024 14:53:45 UTC] PHP Fatal error:  Uncaught Error: Class "Illuminate\Database\Eloquent\Model" not found in /home/zetdsqxs/music.zetdigi.com/backend/app/Models/tag.php:8
+Stack trace:
+#0 {main}
+  thrown in /home/zetdsqxs/music.zetdigi.com/backend/app/Models/tag.php on line 8
+[16-Aug-2024 01:15:13 UTC] PHP Fatal error:  Uncaught Error: Class "Illuminate\Database\Eloquent\Model" not found in /home/zetdsqxs/music.zetdigi.com/backend/app/Models/GiftOrder.php:8
+Stack trace:
+#0 {main}
+  thrown in /home/zetdsqxs/music.zetdigi.com/backend/app/Models/GiftOrder.php on line 8
+[16-Aug-2024 11:42:35 UTC] PHP Fatal error:  Uncaught Error: Class "Illuminate\Database\Eloquent\Model" not found in /home/zetdsqxs/music.zetdigi.com/backend/app/Models/Order.php:8
+Stack trace:
+#0 {main}
+  thrown in /home/zetdsqxs/music.zetdigi.com/backend/app/Models/Order.php on line 8
+[16-Aug-2024 13:30:33 UTC] PHP Fatal error:  Uncaught Error: Class "Illuminate\Database\Eloquent\Model" not found in /home/zetdsqxs/music.zetdigi.com/backend/app/Models/Payment.php:8
+Stack trace:
+#0 {main}
+  thrown in /home/zetdsqxs/music.zetdigi.com/backend/app/Models/Payment.php on line 8
+[16-Aug-2024 13:31:35 UTC] PHP Fatal error:  Uncaught Error: Class "Illuminate\Database\Eloquent\Model" not found in /home/zetdsqxs/music.zetdigi.com/backend/app/Models/Coupon.php:8
+Stack trace:
+#0 {main}
+  thrown in /home/zetdsqxs/music.zetdigi.com/backend/app/Models/Coupon.php on line 8
+[17-Aug-2024 01:25:16 UTC] PHP Fatal error:  Uncaught Error: Class "Illuminate\Database\Eloquent\Model" not found in /home/zetdsqxs/music.zetdigi.com/backend/app/Models/OrderCoupon.php:8
+Stack trace:
+#0 {main}
+  thrown in /home/zetdsqxs/music.zetdigi.com/backend/app/Models/OrderCoupon.php on line 8
+[17-Aug-2024 13:18:16 UTC] PHP Fatal error:  Uncaught Error: Class "Illuminate\Database\Eloquent\Model" not found in /home/zetdsqxs/music.zetdigi.com/backend/app/Models/Gift.php:8
+Stack trace:
+#0 {main}
+  thrown in /home/zetdsqxs/music.zetdigi.com/backend/app/Models/Gift.php on line 8
+[18-Aug-2024 01:02:30 UTC] PHP Fatal error:  Uncaught Error: Class "Illuminate\Database\Eloquent\Model" not found in /home/zetdsqxs/music.zetdigi.com/backend/app/Models/OrderHasService.php:8
+Stack trace:
+#0 {main}
+  thrown in /home/zetdsqxs/music.zetdigi.com/backend/app/Models/OrderHasService.php on line 8
+[18-Aug-2024 10:41:04 UTC] PHP Fatal error:  Uncaught Error: Class "Illuminate\Database\Eloquent\Model" not found in /home/zetdsqxs/music.zetdigi.com/backend/app/Models/message.php:8
+Stack trace:
+#0 {main}
+  thrown in /home/zetdsqxs/music.zetdigi.com/backend/app/Models/message.php on line 8
+[18-Aug-2024 12:26:05 UTC] PHP Fatal error:  Uncaught Error: Class "Illuminate\Database\Eloquent\Model" not found in /home/zetdsqxs/music.zetdigi.com/backend/app/Models/message.php:8
+Stack trace:
+#0 {main}
+  thrown in /home/zetdsqxs/music.zetdigi.com/backend/app/Models/message.php on line 8
+[20-Aug-2024 21:16:43 UTC] PHP Fatal error:  Uncaught Error: Class "Illuminate\Database\Eloquent\Model" not found in /home/zetdsqxs/music.zetdigi.com/backend/app/Models/Subscription.php:8
+Stack trace:
+#0 {main}
+  thrown in /home/zetdsqxs/music.zetdigi.com/backend/app/Models/Subscription.php on line 8
+[20-Aug-2024 21:44:04 UTC] PHP Fatal error:  Uncaught Error: Class "Illuminate\Database\Eloquent\Model" not found in /home/zetdsqxs/music.zetdigi.com/backend/app/Models/PasswordResetToken.php:8
+Stack trace:
+#0 {main}
+  thrown in /home/zetdsqxs/music.zetdigi.com/backend/app/Models/PasswordResetToken.php on line 8
+[21-Aug-2024 03:17:01 UTC] PHP Fatal error:  Uncaught Error: Class "Illuminate\Database\Eloquent\Model" not found in /home/zetdsqxs/music.zetdigi.com/backend/app/Models/ContactLeadGeneration.php:8
+Stack trace:
+#0 {main}
+  thrown in /home/zetdsqxs/music.zetdigi.com/backend/app/Models/ContactLeadGeneration.php on line 8
+[21-Aug-2024 03:17:43 UTC] PHP Fatal error:  Uncaught Error: Class "Illuminate\Database\Eloquent\Model" not found in /home/zetdsqxs/music.zetdigi.com/backend/app/Models/ServicesPromoCode.php:8
+Stack trace:
+#0 {main}
+  thrown in /home/zetdsqxs/music.zetdigi.com/backend/app/Models/ServicesPromoCode.php on line 8
+[21-Aug-2024 03:19:46 UTC] PHP Fatal error:  Uncaught Error: Class "Illuminate\Foundation\Auth\User" not found in /home/zetdsqxs/music.zetdigi.com/backend/app/Models/User.php:13
+Stack trace:
+#0 {main}
+  thrown in /home/zetdsqxs/music.zetdigi.com/backend/app/Models/User.php on line 13
+[21-Aug-2024 03:26:00 UTC] PHP Fatal error:  Uncaught Error: Class "Illuminate\Database\Eloquent\Model" not found in /home/zetdsqxs/music.zetdigi.com/backend/app/Models/LeadGeneration.php:8
+Stack trace:
+#0 {main}
+  thrown in /home/zetdsqxs/music.zetdigi.com/backend/app/Models/LeadGeneration.php on line 8
+[21-Aug-2024 03:28:08 UTC] PHP Fatal error:  Uncaught Error: Class "Illuminate\Database\Eloquent\Model" not found in /home/zetdsqxs/music.zetdigi.com/backend/app/Models/UploadLeadGeneration.php:8
+Stack trace:
+#0 {main}
+  thrown in /home/zetdsqxs/music.zetdigi.com/backend/app/Models/UploadLeadGeneration.php on line 8
+[06-Sep-2024 15:13:22 UTC] PHP Fatal error:  Uncaught Error: Class "Illuminate\Database\Eloquent\Model" not found in /home/zetdsqxs/music.zetdigi.com/backend/app/Models/Gallary.php:8
+Stack trace:
+#0 {main}
+  thrown in /home/zetdsqxs/music.zetdigi.com/backend/app/Models/Gallary.php on line 8
+[08-Sep-2024 16:12:21 UTC] PHP Fatal error:  Uncaught Error: Class "Illuminate\Database\Eloquent\Model" not found in /home/zetdsqxs/music.zetdigi.com/backend/app/Models/Gallary.php:8
+Stack trace:
+#0 {main}
+  thrown in /home/zetdsqxs/music.zetdigi.com/backend/app/Models/Gallary.php on line 8
+[08-Nov-2024 18:21:41 UTC] PHP Fatal error:  Uncaught Error: Class "Illuminate\Database\Eloquent\Model" not found in /home/zetdsqxs/music.zetdigi.com/backend/app/Models/Faq.php:8
+Stack trace:
+#0 {main}
+  thrown in /home/zetdsqxs/music.zetdigi.com/backend/app/Models/Faq.php on line 8
+[08-Nov-2024 18:21:41 UTC] PHP Fatal error:  Uncaught Error: Class "Illuminate\Database\Eloquent\Model" not found in /home/zetdsqxs/music.zetdigi.com/backend/app/Models/Faq.php:8
+Stack trace:
+#0 {main}
+  thrown in /home/zetdsqxs/music.zetdigi.com/backend/app/Models/Faq.php on line 8
+[08-Nov-2024 18:51:29 UTC] PHP Fatal error:  Uncaught Error: Class "Illuminate\Database\Eloquent\Model" not found in /home/zetdsqxs/music.zetdigi.com/backend/app/Models/OrderFile.php:8
+Stack trace:
+#0 {main}
+  thrown in /home/zetdsqxs/music.zetdigi.com/backend/app/Models/OrderFile.php on line 8
+[08-Nov-2024 18:51:29 UTC] PHP Fatal error:  Uncaught Error: Class "Illuminate\Database\Eloquent\Model" not found in /home/zetdsqxs/music.zetdigi.com/backend/app/Models/OrderFile.php:8
+Stack trace:
+#0 {main}
+  thrown in /home/zetdsqxs/music.zetdigi.com/backend/app/Models/OrderFile.php on line 8
+[08-Nov-2024 19:20:36 UTC] PHP Fatal error:  Uncaught Error: Class "Illuminate\Database\Eloquent\Model" not found in /home/zetdsqxs/music.zetdigi.com/backend/app/Models/Revision.php:8
+Stack trace:
+#0 {main}
+  thrown in /home/zetdsqxs/music.zetdigi.com/backend/app/Models/Revision.php on line 8
+[08-Nov-2024 19:20:36 UTC] PHP Fatal error:  Uncaught Error: Class "Illuminate\Database\Eloquent\Model" not found in /home/zetdsqxs/music.zetdigi.com/backend/app/Models/Revision.php:8
+Stack trace:
+#0 {main}
+  thrown in /home/zetdsqxs/music.zetdigi.com/backend/app/Models/Revision.php on line 8
+[08-Nov-2024 19:22:30 UTC] PHP Fatal error:  Uncaught Error: Class "Illuminate\Database\Eloquent\Model" not found in /home/zetdsqxs/music.zetdigi.com/backend/app/Models/RevisionData.php:8
+Stack trace:
+#0 {main}
+  thrown in /home/zetdsqxs/music.zetdigi.com/backend/app/Models/RevisionData.php on line 8
+[08-Nov-2024 19:22:31 UTC] PHP Fatal error:  Uncaught Error: Class "Illuminate\Database\Eloquent\Model" not found in /home/zetdsqxs/music.zetdigi.com/backend/app/Models/RevisionData.php:8
+Stack trace:
+#0 {main}
+  thrown in /home/zetdsqxs/music.zetdigi.com/backend/app/Models/RevisionData.php on line 8
+[08-Nov-2024 20:29:22 UTC] PHP Fatal error:  Uncaught Error: Class "Illuminate\Database\Eloquent\Model" not found in /home/zetdsqxs/music.zetdigi.com/backend/app/Models/UserWallet.php:8
+Stack trace:
+#0 {main}
+  thrown in /home/zetdsqxs/music.zetdigi.com/backend/app/Models/UserWallet.php on line 8
+[08-Nov-2024 20:29:22 UTC] PHP Fatal error:  Uncaught Error: Class "Illuminate\Database\Eloquent\Model" not found in /home/zetdsqxs/music.zetdigi.com/backend/app/Models/UserWallet.php:8
+Stack trace:
+#0 {main}
+  thrown in /home/zetdsqxs/music.zetdigi.com/backend/app/Models/UserWallet.php on line 8
+[10-Nov-2024 18:38:30 UTC] PHP Fatal error:  Uncaught Error: Class "Illuminate\Database\Eloquent\Model" not found in /home/zetdsqxs/music.zetdigi.com/backend/app/Models/Faq.php:8
+Stack trace:
+#0 {main}
+  thrown in /home/zetdsqxs/music.zetdigi.com/backend/app/Models/Faq.php on line 8
+[10-Nov-2024 18:38:31 UTC] PHP Fatal error:  Uncaught Error: Class "Illuminate\Database\Eloquent\Model" not found in /home/zetdsqxs/music.zetdigi.com/backend/app/Models/Faq.php:8
+Stack trace:
+#0 {main}
+  thrown in /home/zetdsqxs/music.zetdigi.com/backend/app/Models/Faq.php on line 8
+[10-Nov-2024 18:54:41 UTC] PHP Fatal error:  Uncaught Error: Class "Illuminate\Database\Eloquent\Model" not found in /home/zetdsqxs/music.zetdigi.com/backend/app/Models/OrderFile.php:8
+Stack trace:
+#0 {main}
+  thrown in /home/zetdsqxs/music.zetdigi.com/backend/app/Models/OrderFile.php on line 8
+[10-Nov-2024 18:54:41 UTC] PHP Fatal error:  Uncaught Error: Class "Illuminate\Database\Eloquent\Model" not found in /home/zetdsqxs/music.zetdigi.com/backend/app/Models/OrderFile.php:8
+Stack trace:
+#0 {main}
+  thrown in /home/zetdsqxs/music.zetdigi.com/backend/app/Models/OrderFile.php on line 8
+[10-Nov-2024 18:59:42 UTC] PHP Fatal error:  Uncaught Error: Class "Illuminate\Database\Eloquent\Model" not found in /home/zetdsqxs/music.zetdigi.com/backend/app/Models/Revision.php:8
+Stack trace:
+#0 {main}
+  thrown in /home/zetdsqxs/music.zetdigi.com/backend/app/Models/Revision.php on line 8
+[10-Nov-2024 18:59:42 UTC] PHP Fatal error:  Uncaught Error: Class "Illuminate\Database\Eloquent\Model" not found in /home/zetdsqxs/music.zetdigi.com/backend/app/Models/Revision.php:8
+Stack trace:
+#0 {main}
+  thrown in /home/zetdsqxs/music.zetdigi.com/backend/app/Models/Revision.php on line 8
+[10-Nov-2024 19:22:14 UTC] PHP Fatal error:  Uncaught Error: Class "Illuminate\Database\Eloquent\Model" not found in /home/zetdsqxs/music.zetdigi.com/backend/app/Models/RevisionData.php:8
+Stack trace:
+#0 {main}
+  thrown in /home/zetdsqxs/music.zetdigi.com/backend/app/Models/RevisionData.php on line 8
+[10-Nov-2024 19:22:14 UTC] PHP Fatal error:  Uncaught Error: Class "Illuminate\Database\Eloquent\Model" not found in /home/zetdsqxs/music.zetdigi.com/backend/app/Models/RevisionData.php:8
+Stack trace:
+#0 {main}
+  thrown in /home/zetdsqxs/music.zetdigi.com/backend/app/Models/RevisionData.php on line 8
+[10-Nov-2024 23:16:00 UTC] PHP Fatal error:  Uncaught Error: Class "Illuminate\Database\Eloquent\Model" not found in /home/zetdsqxs/music.zetdigi.com/backend/app/Models/UserWallet.php:8
+Stack trace:
+#0 {main}
+  thrown in /home/zetdsqxs/music.zetdigi.com/backend/app/Models/UserWallet.php on line 8
+[10-Nov-2024 23:16:01 UTC] PHP Fatal error:  Uncaught Error: Class "Illuminate\Database\Eloquent\Model" not found in /home/zetdsqxs/music.zetdigi.com/backend/app/Models/UserWallet.php:8
+Stack trace:
+#0 {main}
+  thrown in /home/zetdsqxs/music.zetdigi.com/backend/app/Models/UserWallet.php on line 8
+[12-Nov-2024 20:20:10 UTC] PHP Fatal error:  Uncaught Error: Class "Illuminate\Database\Eloquent\Model" not found in /home/zetdsqxs/music.zetdigi.com/backend/app/Models/Revision.php:8
+Stack trace:
+#0 {main}
+  thrown in /home/zetdsqxs/music.zetdigi.com/backend/app/Models/Revision.php on line 8
+[12-Nov-2024 21:03:15 UTC] PHP Fatal error:  Uncaught Error: Class "Illuminate\Database\Eloquent\Model" not found in /home/zetdsqxs/music.zetdigi.com/backend/app/Models/RevisionData.php:8
+Stack trace:
+#0 {main}
+  thrown in /home/zetdsqxs/music.zetdigi.com/backend/app/Models/RevisionData.php on line 8
+[12-Nov-2024 21:03:15 UTC] PHP Fatal error:  Uncaught Error: Class "Illuminate\Database\Eloquent\Model" not found in /home/zetdsqxs/music.zetdigi.com/backend/app/Models/RevisionData.php:8
+Stack trace:
+#0 {main}
+  thrown in /home/zetdsqxs/music.zetdigi.com/backend/app/Models/RevisionData.php on line 8
