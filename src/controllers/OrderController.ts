@@ -1,0 +1,150 @@
+import { Response } from 'express';
+import { Order, OrderItem, Service } from '../models';
+import { AuthRequest } from '../middleware/auth';
+
+export class OrderController {
+  // Get all orders for a user
+  static async index(req: AuthRequest, res: Response) {
+    try {
+      const userId = req.user?.id;
+      const page = parseInt(req.query['page'] as string) || 1;
+      const perPage = parseInt(req.query['per_page'] as string) || 10;
+      const offset = (page - 1) * perPage;
+
+      const { count, rows: orders } = await Order.findAndCountAll({
+        where: { user_id: userId },
+        include: [
+          { model: OrderItem, as: 'orderItems', include: [{ model: Service, as: 'service' }] },
+        ],
+        order: [['createdAt', 'DESC']],
+        limit: perPage,
+        offset: offset,
+      });
+
+      const totalPages = Math.ceil(count / perPage);
+
+      return res.json({
+        success: true,
+        data: {
+          orders,
+          pagination: {
+            current_page: page,
+            per_page: perPage,
+            total: count,
+            total_pages: totalPages,
+            has_next_page: page < totalPages,
+            has_prev_page: page > 1,
+          },
+        },
+      });
+    } catch (error) {
+      console.error('Order index error:', error);
+      return res.status(500).json({ message: 'Server error' });
+    }
+  }
+
+  // Get order by ID
+  static async show(req: AuthRequest, res: Response) {
+    try {
+      const { id } = req.params;
+      const userId = req.user?.id;
+      const order = await Order.findOne({
+        where: { id, user_id: userId },
+        include: [
+          { model: OrderItem, as: 'orderItems', include: [{ model: Service, as: 'service' }] },
+        ],
+      });
+      if (!order) {
+        return res.status(404).json({ message: 'Order not found' });
+      }
+      return res.json({ success: true, data: { order } });
+    } catch (error) {
+      console.error('Order show error:', error);
+      return res.status(500).json({ message: 'Server error' });
+    }
+  }
+
+  // Create order
+  static async create(req: AuthRequest, res: Response) {
+    try {
+      const userId = req.user?.id;
+      const { amount, currency, order_type } = req.body;
+      const order = await Order.create({
+        user_id: userId,
+        transaction_id: `TXN_${Date.now()}`,
+        amount,
+        currency: currency || 'USD',
+        order_type,
+        Order_status: 0,
+      });
+      return res.status(201).json({ success: true, data: { order } });
+    } catch (error) {
+      console.error('Order create error:', error);
+      return res.status(500).json({ message: 'Server error' });
+    }
+  }
+
+  // Update order status
+  static async updateStatus(req: AuthRequest, res: Response) {
+    try {
+      const { id } = req.params;
+      const { Order_status } = req.body;
+      const userId = req.user?.id;
+      const order = await Order.findOne({ where: { id, user_id: userId } });
+      if (!order) {
+        return res.status(404).json({ message: 'Order not found' });
+      }
+      order.Order_status = Order_status;
+      await order.save();
+      return res.json({ success: true, data: { order } });
+    } catch (error) {
+      console.error('Order updateStatus error:', error);
+      return res.status(500).json({ message: 'Server error' });
+    }
+  }
+
+  // Upload order files
+  static async uploadFiles(req: AuthRequest, res: Response) {
+    try {
+      const { orderId: _orderId } = req.params;
+      const files = req.files as Express.Multer.File[];
+
+      if (!files || files.length === 0) {
+        return res.status(400).json({ message: 'Files are required' });
+      }
+
+      return res.json({
+        success: true,
+        message: 'Files uploaded successfully',
+        data: { files: files.map(f => f.originalname) },
+      });
+    } catch (error) {
+      console.error('Order upload files error:', error);
+      return res.status(500).json({ message: 'Server error' });
+    }
+  }
+
+  // Get order statistics
+  static async getStats(req: AuthRequest, res: Response) {
+    try {
+      const userId = req.user.id;
+      const totalOrders = await Order.count({ where: { user_id: userId } });
+      const totalSpent = await Order.sum('amount', { where: { user_id: userId } });
+      const averageOrderValue = totalSpent ? totalSpent / totalOrders : 0;
+
+      const stats = {
+        totalOrders,
+        totalSpent,
+        averageOrderValue,
+      };
+
+      return res.json({
+        success: true,
+        data: { stats },
+      });
+    } catch (error) {
+      console.error('Order stats error:', error);
+      return res.status(500).json({ message: 'Server error' });
+    }
+  }
+} 
