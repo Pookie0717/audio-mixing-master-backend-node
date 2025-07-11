@@ -41,16 +41,31 @@ const PORT = process.env['PORT'] || 3000;
 
 // Middleware
 app.use(helmet());
+// CORS configuration
+const allowedOrigins = process.env['ALLOWED_ORIGINS']?.split(',') || [
+  'http://localhost:3000',
+  'http://localhost:5173',
+  'http://127.0.0.1:5173',
+  'https://audio-mixing-master-test.vercel.app',
+  'https://audio-mixing-master.vercel.app'
+];
+
 app.use(cors({
-  origin: process.env['ALLOWED_ORIGINS']?.split(',') || [
-    'http://localhost:3000',
-    'http://localhost:5173',
-    'http://127.0.0.1:5173',
-    'https://audio-mixing-master-test.vercel.app/'
-  ],
+  origin: function (origin, callback) {
+    // Allow requests with no origin (like mobile apps or curl requests)
+    if (!origin) return callback(null, true);
+    
+    if (allowedOrigins.indexOf(origin) !== -1) {
+      callback(null, true);
+    } else {
+      console.log('CORS blocked origin:', origin);
+      callback(new Error('Not allowed by CORS'));
+    }
+  },
   credentials: true,
   methods: ['GET', 'POST', 'PUT', 'DELETE', 'PATCH', 'OPTIONS'],
-  allowedHeaders: ['Content-Type', 'Authorization', 'X-Requested-With'],
+  allowedHeaders: ['Content-Type', 'Authorization', 'X-Requested-With', 'Accept'],
+  exposedHeaders: ['Content-Range', 'X-Content-Range'],
 }));
 app.use(compression());
 app.use(morgan('combined'));
@@ -61,6 +76,9 @@ app.use(express.urlencoded({ extended: true, limit: '100mb' }));
 // Static files
 app.use('/uploads', express.static('uploads'));
 app.use('/public', express.static('public'));
+
+// Handle preflight requests
+app.options('*', cors());
 
 // Root Route
 app.get("/", (_req, res) => {
