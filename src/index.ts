@@ -61,6 +61,11 @@ app.use(express.urlencoded({ extended: true, limit: '100mb' }));
 app.use('/uploads', express.static('uploads'));
 app.use('/public', express.static('public'));
 
+// Root Route
+app.get("/", (_req, res) => {
+  res.send("🎉 Backend is running!");
+});
+
 // Health check
 app.get('/health', (_req, res) => {
   res.status(200).json({
