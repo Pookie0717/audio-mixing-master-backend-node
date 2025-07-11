@@ -20,7 +20,7 @@ yarn-error.log*
 /.vscode
 
 # Build output
-dist/
+
 build/
 
 # Environment variables
