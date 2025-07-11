@@ -117,8 +117,7 @@ export class ServiceController {
   // Get service details by ID with variations
   static async getServiceDetails(req: Request, res: Response) {
     try {
-      const { id } = req.params;
-      
+      const { id } = req.params;     
       // Find the main service
       const service = await Service.findOne({
         where: { id, is_active: 1 },

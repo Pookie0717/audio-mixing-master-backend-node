@@ -1,12 +1,545 @@
 import { Response } from 'express';
-import { Payment, Order, User } from '../models';
+import { Payment, Order, User, Service, Cart, OrderItem } from '../models';
 import { AuthRequest } from '../middleware/auth';
 import { 
   createStripePaymentIntent, 
-  createPayPalOrder
+  createPayPalOrder,
+  createStripeSubscription,
+  createPayPalSubscription,
+  getPayPalOrderDetails,
+  createStripeCheckoutSession
 } from '../services/PaymentService';
+import { sendOrderSuccessEmail, sendGiftCardEmail } from '../services/EmailService';
+import { v4 as uuidv4 } from 'uuid';
 
 export class PaymentController {
+  // PayPal payment - matches Laravel implementation
+  static async paypal(req: AuthRequest | any, res: Response) {
+    try {
+      const { amount, currency = 'USD', cartItem } = req.body;
+
+      if (!amount || !cartItem) {
+        return res.status(400).json({ message: 'Amount and cart items are required' });
+      }
+
+      const paypalOrder = await createPayPalOrder(amount, currency);
+
+      if (paypalOrder.id) {
+        // Find the approve link
+        const approveLink = paypalOrder.links?.find((link: any) => link.rel === 'approve');
+        
+        if (approveLink) {
+          return res.json({
+            approve_link: approveLink.href
+          });
+        } else {
+          console.error('No approve link found in PayPal response', paypalOrder);
+          return res.status(500).json({ message: 'PayPal order creation failed' });
+        }
+      } else {
+        console.error('PayPal create order failed', paypalOrder);
+        return res.status(500).json({ message: 'PayPal order creation failed' });
+      }
+    } catch (error) {
+      console.error('PayPal payment error:', error);
+      return res.status(500).json({ message: 'Server error' });
+    }
+  }
+
+  // Create Stripe payment intent - for frontend integration (works for both auth and guest)
+  static async createPaymentIntent(req: AuthRequest | any, res: Response) {
+    try {
+      const { amount, user_id: _user_id, cart_items } = req.body;
+
+      if (!amount || !cart_items) {
+        return res.status(400).json({ message: 'Amount and cart items are required' });
+      }
+
+      const paymentIntent = await createStripePaymentIntent(parseFloat(amount), 'usd');
+
+      return res.json({
+        clientSecret: paymentIntent.client_secret
+      });
+    } catch (error) {
+      console.error('Stripe payment intent error:', error);
+      const errorMessage = error instanceof Error ? error.message : 'Unknown error';
+      return res.status(500).json({ message: `Error: ${errorMessage}` });
+    }
+  }
+
+  // Stripe payment - matches Laravel implementation (works for both auth and guest)
+  static async stripePay(req: AuthRequest | any, res: Response) {
+    try {
+      const { cartItem, amount, currency = 'USD', promocode, userId: _userId, order_type, paymentMethodId, customerEmail, customerName } = req.body;
+
+      if (!cartItem || !amount) {
+        return res.status(400).json({ message: 'Cart items and amount are required' });
+      }
+
+      // Handle both authenticated and guest users
+      const userEmail = req.user?.email || customerEmail;
+      const userName = req.user ? `${req.user.first_name} ${req.user.last_name}` : customerName;
+      const currentUserId = req.user?.id || 'guest';
+
+      if (paymentMethodId) {
+        // Handle payment method flow (for guest checkout)
+        try {
+          const paymentIntent = await createStripePaymentIntent(parseFloat(amount), currency.toLowerCase());
+          
+          // Confirm the payment with the payment method
+          const stripe = require('stripe')(process.env['STRIPE_SECRET_KEY']);
+          const paymentIntentResult = await stripe.paymentIntents.confirm(paymentIntent.id, {
+            payment_method: paymentMethodId,
+            return_url: `${process.env['FRONTEND_URL']}/success`,
+          });
+
+          return res.json({
+            success: true,
+            paymentIntent: paymentIntentResult,
+            clientSecret: paymentIntent.client_secret
+          });
+        } catch (error) {
+          console.error('Stripe payment method error:', error);
+          return res.status(500).json({ message: 'Payment failed' });
+        }
+      } else {
+        // Handle checkout session flow (for authenticated users)
+        const lineItems = cartItem.map((item: any) => ({
+          price_data: {
+            product_data: {
+              name: item.service_name,
+            },
+            currency: 'USD',
+            unit_amount: item.price,
+          },
+          quantity: item.qty,
+        }));
+
+        const session = await createStripeCheckoutSession({
+          line_items: lineItems,
+          mode: 'payment',
+          allow_promotion_codes: false,
+          metadata: {
+            user_id: currentUserId,
+          },
+          customer_email: userEmail,
+          success_url: `${process.env['FRONTEND_URL']}/success?amount=${amount}&currency=${currency}&promocode=${promocode || ''}&cartItem=${encodeURIComponent(JSON.stringify(cartItem))}&user_id=${currentUserId}&transaction_id={CHECKOUT_SESSION_ID}&payer_name=${userName}&payer_email=${userEmail}&order_type=${order_type}`,
+          cancel_url: `${process.env['FRONTEND_URL']}/cancel?amount=${amount}&currency=${currency}&promocode=${promocode || ''}&cartItem=${encodeURIComponent(JSON.stringify(cartItem))}&transaction_id={CHECKOUT_SESSION_ID}`,
+        });
+
+        return res.json({ url: session.url });
+      }
+    } catch (error) {
+      console.error('Stripe payment error:', error);
+      const errorMessage = error instanceof Error ? error.message : 'Unknown error';
+      return res.status(500).json({ message: `Error: ${errorMessage}` });
+    }
+  }
+
+  // Stripe subscription (works for both auth and guest)
+  static async stripeSubscribe(req: AuthRequest | any, res: Response) {
+    try {
+      const { service_id, customerId, priceId, customerEmail, customerName } = req.body;
+
+      if (!service_id || !priceId) {
+        return res.status(400).json({ message: 'Service ID and price ID are required' });
+      }
+
+      const service = await Service.findByPk(service_id);
+      if (!service) {
+        return res.status(404).json({ message: 'Service not found' });
+      }
+
+      // Handle both authenticated and guest users
+      const userEmail = req.user?.email || customerEmail;
+      const userName = req.user ? `${req.user.first_name} ${req.user.last_name}` : customerName;
+
+      // Create or get customer
+      const stripe = require('stripe')(process.env['STRIPE_SECRET_KEY']);
+      let customer;
+      
+      if (customerId) {
+        customer = await stripe.customers.retrieve(customerId);
+      } else {
+        // Create new customer for guest
+        customer = await stripe.customers.create({
+          email: userEmail,
+          name: userName,
+        });
+      }
+
+      const subscription = await createStripeSubscription(customer.id, priceId);
+
+      return res.json({
+        success: true,
+        data: {
+          subscriptionId: subscription.id,
+          status: subscription.status,
+          customerId: customer.id,
+          clientSecret: subscription.latest_invoice && typeof subscription.latest_invoice === 'object' 
+            ? (subscription.latest_invoice as any).payment_intent?.client_secret 
+            : undefined,
+        },
+      });
+    } catch (error) {
+      console.error('Stripe subscription error:', error);
+      const errorMessage = error instanceof Error ? error.message : 'Unknown error';
+      return res.status(500).json({ message: `Error: ${errorMessage}` });
+    }
+  }
+
+  // PayPal subscription
+  static async createSubscription(req: AuthRequest, res: Response) {
+    try {
+      const { service_id, planId } = req.body;
+      const startTime = new Date(Date.now() + 24 * 60 * 60 * 1000).toISOString(); // Start tomorrow
+
+      if (!service_id || !planId) {
+        return res.status(400).json({ message: 'Service ID and plan ID are required' });
+      }
+
+      const service = await Service.findByPk(service_id);
+      if (!service) {
+        return res.status(404).json({ message: 'Service not found' });
+      }
+
+      const subscription = await createPayPalSubscription(planId, startTime);
+
+      return res.json({
+        success: true,
+        data: {
+          subscriptionId: subscription.id,
+          status: subscription.status,
+          links: subscription.links,
+        },
+      });
+    } catch (error) {
+      console.error('PayPal subscription error:', error);
+      return res.status(500).json({ message: 'Server error' });
+    }
+  }
+
+  // Get order details
+  static async getOrderDetails(req: AuthRequest, res: Response) {
+    try {
+      const { orderId } = req.query;
+
+      if (!orderId) {
+        return res.status(400).json({ message: 'Order ID is required' });
+      }
+
+      const orderDetails = await getPayPalOrderDetails(orderId as string);
+
+      return res.json({
+        success: true,
+        data: orderDetails,
+      });
+    } catch (error) {
+      console.error('Get order details error:', error);
+      return res.status(500).json({ message: 'Server error' });
+    }
+  }
+
+  // Get order details by ID
+  static async orderDetails(req: AuthRequest, res: Response) {
+    try {
+      const { id } = req.params;
+
+      const order = await Order.findOne({
+        where: { id },
+        include: [
+          { model: User, as: 'user' },
+          { model: Service, as: 'service' },
+        ],
+      });
+
+      if (!order) {
+        return res.status(404).json({ message: 'Order not found' });
+      }
+
+      return res.json({
+        success: true,
+        data: { order },
+      });
+    } catch (error) {
+      console.error('Order details error:', error);
+      return res.status(500).json({ message: 'Server error' });
+    }
+  }
+
+  // Get user orders
+  static async userOrders(req: AuthRequest, res: Response) {
+    try {
+      const { user_id } = req.params;
+      const { page = 1, limit = 10 } = req.query;
+      const offset = (parseInt(page as string) - 1) * parseInt(limit as string);
+
+      const orders = await Order.findAndCountAll({
+        where: { user_id },
+        include: [
+          { model: Service, as: 'service' },
+        ],
+        offset,
+        limit: parseInt(limit as string),
+        order: [['createdAt', 'DESC']],
+      });
+
+      return res.json({
+        success: true,
+        data: {
+          orders: orders.rows,
+          pagination: {
+            page: parseInt(page as string),
+            limit: parseInt(limit as string),
+            total: orders.count,
+            pages: Math.ceil(orders.count / parseInt(limit as string)),
+          },
+        },
+      });
+    } catch (error) {
+      console.error('User orders error:', error);
+      return res.status(500).json({ message: 'Server error' });
+    }
+  }
+
+  // PayPal success callback - matches Laravel implementation
+  static async success(req: AuthRequest | any, res: Response) {
+    try {
+      const {
+        user_id,
+        transaction_id,
+        amount,
+        payer_name,
+        payer_email,
+        order_type,
+        payment_method,
+        cartItems,
+        promocode,
+        order_id
+      } = req.body;
+
+      console.log('Payment success request body:', {
+        user_id,
+        transaction_id,
+        amount,
+        payer_name,
+        payer_email,
+        order_type,
+        payment_method,
+        cartItems: cartItems?.length,
+        promocode,
+        order_id
+      });
+
+      // Validate required fields
+      if (!transaction_id || !amount || !payer_name || !payer_email || !order_type || !payment_method || !cartItems) {
+        return res.status(400).json({ message: 'Missing required fields' });
+      }
+
+      let user;
+      
+      // Handle guest users
+      if (!user_id || user_id === 'guest') {
+        // Create a temporary guest user account
+        const [firstName, ...lastNameParts] = payer_name.split(' ');
+        const lastName = lastNameParts.join(' ') || 'Guest';
+        
+        console.log('Creating guest user:', { firstName, lastName, email: payer_email });
+        user = await User.findOne({ where: { email: payer_email } });
+        if (!user) {
+          user = await User.create({
+            first_name: firstName,
+            last_name: lastName,
+            email: payer_email,
+            password: `guest_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`, // Temporary password
+            role: 'guest',
+            is_active: 1
+          });
+        }
+        
+        console.log('Guest user created with ID:', user.id);
+      } else {
+        // Find existing user
+        user = await User.findByPk(user_id);
+        if (!user) {
+          return res.status(404).json({ message: 'User not found' });
+        }
+        console.log('Using existing user with ID:', user.id);
+      }
+
+      // Create order
+      console.log('Creating order with user_id:', user.id);
+      
+      const order = await Order.create({
+        user_id: user.id,
+        transaction_id,
+        amount: parseFloat(amount),
+        currency: 'USD',
+        promocode: promocode || null,
+        Order_status: 0,
+        is_active: 1,
+        payer_name,
+        payer_email,
+        payment_status: 'PAID',
+        payment_method,
+        order_type,
+        order_reference_id: order_id || null
+      });
+      
+      console.log('Order created with ID:', order.id);
+
+      let totalAmount = 0;
+
+      // Process each cart item
+      for (const item of cartItems) {
+        const service = await Service.findByPk(item.service_id);
+        
+        if (service && service.category_id === 15) {
+          // Handle gift card purchase
+          const giftCode = `gift-${uuidv4().toUpperCase().replace(/-/g, '')}`;
+          
+          // Create user wallet entry (you'll need to create this model)
+          // UserWallet.create({
+          //   user_id: parseInt(user_id),
+          //   promocode: giftCode,
+          //   amount: parseFloat(item.price),
+          // });
+
+          // Send gift card email
+          await sendGiftCardEmail({
+            name: `${user.first_name} ${user.last_name}`,
+            message: `Thank you for your purchase. Your gift card amount is: $${item.price} and your code is:`,
+            code: giftCode,
+            email: user.email
+          });
+        }
+
+        // Create order item
+        await OrderItem.create({
+          order_id: order.id,
+          service_id: item.service_id,
+          name: item.service_name,
+          price: item.price.toString(),
+          quantity: item.qty.toString(),
+          max_revision: parseInt(item.qty) * 3,
+          total_price: item.total_price.toString(),
+          service_type: item.service_type,
+          paypal_product_id: item.paypal_product_id || null,
+          paypal_plan_id: item.paypal_plan_id || null,
+          admin_is_read: 0,
+          user_is_read: 0
+        });
+
+        totalAmount += parseFloat(item.total_price);
+      }
+
+      // Handle coupon/promocode logic
+      if (promocode) {
+        if (promocode.startsWith('gift-')) {
+          // Handle gift card usage
+          // const userWallet = await UserWallet.findOne({ where: { promocode } });
+          // if (userWallet) {
+          //   const usableAmount = Math.min(userWallet.amount, totalAmount);
+          //   userWallet.use_amount += usableAmount;
+          //   userWallet.amount = Math.max(0, userWallet.amount - totalAmount);
+          //   await userWallet.save();
+          // }
+        } else {
+          // Handle regular coupon
+          // const coupon = await Coupon.findOne({ where: { code: promocode } });
+          // if (coupon) {
+          //   coupon.uses += 1;
+          //   await coupon.save();
+          // }
+        }
+      }
+
+      // Remove items from cart if payment type is one_time
+      if (order_type === 'one_time') {
+        for (const item of cartItems) {
+          await Cart.destroy({
+            where: {
+              service_id: item.service_id,
+              user_id: user.id
+            }
+          });
+        }
+      }
+
+      // Get order items for email
+      const orderItems = await OrderItem.findAll({
+        where: { order_id: order.id }
+      });
+
+      // Send emails
+      const userUrl = process.env['FRONTEND_URL'] || 'http://localhost:3000';
+      const adminUrl = process.env['ADMIN_URL'] || 'http://localhost:3001';
+
+      // Email to user
+      await sendOrderSuccessEmail({
+        name: `${user.first_name} ${user.last_name}`,
+        order_id: order.id,
+        message: 'Thank you for your purchase. Your order has been processed successfully. Your order details are as follows',
+        items: orderItems,
+        url: `${userUrl}/order/${order.id}`,
+        email: user.email
+      });
+
+      // Email to admin
+      const admin = await User.findOne({ where: { role: 'admin' } });
+      if (admin) {
+        await sendOrderSuccessEmail({
+          name: `${admin.first_name} ${admin.last_name}`,
+          order_id: order.id,
+          items: orderItems,
+          message: 'New Order Arrived. All Engineer has been notified',
+          url: `${adminUrl}/order-detail/${order.id}`,
+          email: admin.email
+        });
+      }
+
+      // Email to engineers
+      const engineers = await User.findAll({ where: { role: 'engineer' } });
+      for (const engineer of engineers) {
+        await sendOrderSuccessEmail({
+          name: `${engineer.first_name} ${engineer.last_name}`,
+          order_id: order.id,
+          items: orderItems,
+          url: `${adminUrl}/order-detail/${order.id}`,
+          message: 'New Order Arrived. Click the link below and go to the dashboard.',
+          email: engineer.email
+        });
+      }
+
+      const response = {
+        message: 'success',
+        order_id: order.id
+      };
+      
+      console.log('Payment success response:', response);
+      
+      return res.json(response);
+
+    } catch (error) {
+      console.error('Payment success error:', error);
+      const errorMessage = error instanceof Error ? error.message : 'Unknown error';
+      return res.status(500).json({ message: `Error: ${errorMessage}` });
+    }
+  }
+
+  // PayPal cancel callback
+  static async cancel(_req: AuthRequest | any, res: Response) {
+    try {
+      return res.json({
+        success: false,
+        message: 'Payment cancelled',
+      });
+    } catch (error) {
+      console.error('PayPal cancel error:', error);
+      return res.status(500).json({ message: 'Server error' });
+    }
+  }
+
   // Process payment
   static async processPayment(req: AuthRequest, res: Response) {
     try {

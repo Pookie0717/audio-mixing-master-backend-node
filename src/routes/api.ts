@@ -6,7 +6,7 @@ import { CategoryController } from '../controllers/CategoryController';
 import { OrderController } from '../controllers/OrderController';
 import { CartController } from '../controllers/CartController';
 import { PaymentController } from '../controllers/PaymentController';
-import { auth } from '../middleware/auth';
+import { auth, optionalAuth } from '../middleware/auth';
 import { SampleAudioController } from '../controllers/SampleAudioController';
 import { GalleryController } from '../controllers/GalleryController';
 import { FaqController } from '../controllers/FaqController';
@@ -49,8 +49,8 @@ router.get('/services/search', ServiceController.search);
 router.get('/services/category/:categoryId', ServiceController.getByCategory);
 router.get('/service-details/:id', ServiceController.getServiceDetails);
 router.get('/services-list', (_req: Request, _res: Response) => {/* AdminServiceController.serviceList */});
-router.get('/gifts', (_req: Request, _res: Response) => {/* GiftController.index */});
-router.get('/gifts/:id', (_req: Request, _res: Response) => {/* GiftController.show */});
+router.get('/my-gifts', (_req: Request, _res: Response) => {/* GiftController.index */});
+router.get('/my-gifts/:id', (_req: Request, _res: Response) => {/* GiftController.show */});
 router.get('/lead/generation', (_req: Request, _res: Response) => {/* leadGenerationController.index */});
 router.get('/lead/generation/:id', (_req: Request, _res: Response) => {/* leadGenerationController.show */});
 router.post('/lead/generation', (_req: Request, _res: Response) => {/* leadGenerationController.store */});
@@ -94,10 +94,19 @@ router.put('/cart/:serviceId', auth, CartController.update);
 router.delete('/cart/:serviceId', auth, CartController.remove);
 
 // Payment routes (protected)
-router.post('/payments/process', auth, PaymentController.processPayment);
-router.post('/payments/:paymentId/refund', auth, PaymentController.refundPayment);
-router.get('/payments/history', auth, PaymentController.getPaymentHistory);
-router.get('/payments/:id', auth, PaymentController.getPayment);
+router.post('/stripe/pay', auth, PaymentController.stripePay);
+router.post('/stripe/pay/guest', PaymentController.stripePay); // Guest checkout - no auth required
+router.post('/stripe/intent', auth, PaymentController.createPaymentIntent);
+router.post('/stripe/intent/guest', PaymentController.createPaymentIntent); // Guest checkout - no auth required
+router.post('/stripe/subscribe', auth, PaymentController.stripeSubscribe);
+router.post('/stripe/subscribe/guest', PaymentController.stripeSubscribe); // Guest subscription - no auth required
+router.post('/paypal', optionalAuth, PaymentController.paypal); // Works for both auth and guest users
+router.post('/create-subscription', auth, PaymentController.createSubscription);
+router.get('/fetch/order', auth, PaymentController.getOrderDetails);
+router.get('/order-details/:id', auth, PaymentController.orderDetails);
+router.get('/user-orders/:user_id', auth, PaymentController.userOrders);
+router.post('/success', optionalAuth, PaymentController.success); // Works for both auth and guest users
+router.get('/cancel', optionalAuth, PaymentController.cancel); // Works for both auth and guest users
 
 // ADMIN ROUTES (to be wrapped with admin middleware)
 // router.use('/admin', adminMiddleware, adminRouter);

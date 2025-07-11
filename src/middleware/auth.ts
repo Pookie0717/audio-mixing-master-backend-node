@@ -35,6 +35,44 @@ export const auth = async (req: AuthRequest, res: Response, next: NextFunction) 
   }
 };
 
+// Optional auth middleware - allows both authenticated and guest users
+export const optionalAuth = async (req: AuthRequest, _res: Response, next: NextFunction) => {
+  try {
+    const token = req.header('Authorization')?.replace('Bearer ', '');
+
+    if (!token) {
+      // No token provided, continue as guest user
+      req.user = null;
+      return next();
+    }
+
+    const decoded = jwt.verify(token, process.env['JWT_SECRET'] || 'fallback-secret') as any;
+    
+    const user = await User.findByPk(decoded.id, {
+      attributes: ['id', 'first_name', 'last_name', 'email', 'role', 'is_active'],
+    });
+
+    if (!user) {
+      // Invalid token, continue as guest user
+      req.user = null;
+      return next();
+    }
+
+    if (user.is_active !== 1) {
+      // Inactive account, continue as guest user
+      req.user = null;
+      return next();
+    }
+
+    req.user = user;
+    return next();
+  } catch (error) {
+    // Token error, continue as guest user
+    req.user = null;
+    return next();
+  }
+};
+
 export const adminAuth = async (req: AuthRequest, res: Response, next: NextFunction) => {
   try {
     await new Promise<void>((resolve, reject) => {

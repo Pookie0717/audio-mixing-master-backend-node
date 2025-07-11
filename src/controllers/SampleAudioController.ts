@@ -7,7 +7,7 @@ export class SampleAudioController {
    */
   static async index(req: Request, res: Response) {
     try {
-      const perPage = parseInt(req.query['per_page'] as string) || 10;
+      const perPage = parseInt(req.query['per_page'] as string) || 12;
       const page = parseInt(req.query['page'] as string) || 1;
       const offset = (page - 1) * perPage;
 
@@ -38,32 +38,34 @@ export class SampleAudioController {
         };
       });
 
-      // Generate pagination URLs
-      const baseUrl = `${req.protocol}://${req.get('host')}${req.baseUrl}${req.path}`;
+      // Generate base URL (without query params)
+      const protocol = req.protocol;
+      const host = req.get('host');
+      const basePath = req.baseUrl + req.path;
+      const baseUrl = `${protocol}://${host}${basePath}`;
+
+      // Pagination URLs
       const firstPageUrl = `${baseUrl}?page=1`;
       const lastPageUrl = `${baseUrl}?page=${lastPage}`;
       const nextPageUrl = page < lastPage ? `${baseUrl}?page=${page + 1}` : null;
       const prevPageUrl = page > 1 ? `${baseUrl}?page=${page - 1}` : null;
 
-      // Generate pagination links
+      // Pagination links array
       const links = [];
-      
       // Previous link
       links.push({
         url: prevPageUrl,
         label: "&laquo; Previous",
         active: false
       });
-
       // Page number links
       for (let i = 1; i <= lastPage; i++) {
         links.push({
-          url: i === 1 ? baseUrl : `${baseUrl}?page=${i}`,
+          url: `${baseUrl}?page=${i}`,
           label: i.toString(),
           active: i === page
         });
       }
-
       // Next link
       links.push({
         url: nextPageUrl,
@@ -75,7 +77,7 @@ export class SampleAudioController {
         current_page: page,
         data: formattedSamples,
         first_page_url: firstPageUrl,
-        from: ((page - 1) * perPage) + 1,
+        from: count === 0 ? null : ((page - 1) * perPage) + 1,
         last_page: lastPage,
         last_page_url: lastPageUrl,
         links: links,

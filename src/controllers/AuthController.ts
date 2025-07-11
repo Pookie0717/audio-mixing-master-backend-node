@@ -1,7 +1,7 @@
 import { Request, Response } from 'express';
 import jwt from 'jsonwebtoken';
 import User from '../models/User';
-import { Favourite, Service, Category } from '../models';
+import { Favourite, Service, Category, Label } from '../models';
 import { sendWelcomeEmail, sendPasswordResetEmail } from '../services/EmailService';
 
 export class AuthController {
@@ -211,8 +211,17 @@ export class AuthController {
       }
 
       return res.json({
-        success: true,
-        data: { user },
+        id: user.id,
+        avatar: user.avatar || null,
+        first_name: user.first_name,
+        last_name: user.last_name,
+        email: user.email,
+        email_verified_at: user.email_verified_at,
+        phone_number: user.phone_number,
+        role: user.role,
+        is_active: user.is_active,
+        created_at: user.createdAt,
+        updated_at: user.updatedAt
       });
     } catch (error) {
       console.error('Get current user error:', error);
@@ -225,7 +234,7 @@ export class AuthController {
     try {
       const userId = req.user.id;
       const page = parseInt(req.query.page as string) || 1;
-      const perPage = parseInt(req.query.per_page as string) || 10;
+      const perPage = parseInt(req.query.per_page as string) || 15;
       const offset = (page - 1) * perPage;
 
       const { count, rows: favourites } = await Favourite.findAndCountAll({
@@ -239,6 +248,10 @@ export class AuthController {
                 model: Category,
                 as: 'category',
               },
+              {
+                model: Label,
+                as: 'label',
+              },
             ],
           },
         ],
@@ -248,20 +261,82 @@ export class AuthController {
       });
 
       const totalPages = Math.ceil(count / perPage);
+      const baseUrl = `${req.protocol}://${req.get('host')}${req.path}`;
+
+      // Transform favourites to match the desired format
+      const transformedData = favourites.map((favourite: any) => ({
+        id: favourite.service.id,
+        user_id: favourite.user_id,
+        service_id: favourite.service_id,
+        created_at: favourite.createdAt,
+        updated_at: favourite.updatedAt,
+        category_id: favourite.service.category_id,
+        label_id: favourite.service.label_id,
+        parent_id: favourite.service.parent_id,
+        paypal_product_id: favourite.service.paypal_product_id,
+        paypal_plan_id: favourite.service.paypal_plan_id,
+        stripe_product_id: favourite.service.stripe_product_id,
+        stripe_plan_id: favourite.service.stripe_plan_id,
+        name: favourite.service.name,
+        image: favourite.service.image,
+        is_url: favourite.service.is_url,
+        price: favourite.service.price,
+        discounted_price: favourite.service.discounted_price,
+        service_type: favourite.service.service_type,
+        detail: favourite.service.detail,
+        brief_detail: favourite.service.brief_detail,
+        includes: favourite.service.includes,
+        description: favourite.service.description,
+        requirements: favourite.service.requirements,
+        notes: favourite.service.notes,
+        tags: favourite.service.tags,
+        is_active: favourite.service.is_active,
+        is_variation: favourite.service.is_variation,
+        detail_data: favourite.service.detail_data,
+        is_session: favourite.service.is_session,
+        label_name: favourite.service.label?.name || null
+      }));
+
+      // Build pagination links
+      const links = [];
+      
+      // Previous link
+      links.push({
+        url: page > 1 ? `${baseUrl}?page=${page - 1}` : null,
+        label: "&laquo; Previous",
+        active: false
+      });
+
+      // Page numbers
+      for (let i = 1; i <= totalPages; i++) {
+        links.push({
+          url: `${baseUrl}?page=${i}`,
+          label: i.toString(),
+          active: i === page
+        });
+      }
+
+      // Next link
+      links.push({
+        url: page < totalPages ? `${baseUrl}?page=${page + 1}` : null,
+        label: "Next &raquo;",
+        active: false
+      });
 
       return res.json({
-        success: true,
-        data: {
-          favourites,
-          pagination: {
-            current_page: page,
-            per_page: perPage,
-            total: count,
-            total_pages: totalPages,
-            has_next_page: page < totalPages,
-            has_prev_page: page > 1,
-          },
-        },
+        current_page: page,
+        data: transformedData,
+        first_page_url: `${baseUrl}?page=1`,
+        from: count > 0 ? offset + 1 : null,
+        last_page: totalPages,
+        last_page_url: `${baseUrl}?page=${totalPages}`,
+        links: links,
+        next_page_url: page < totalPages ? `${baseUrl}?page=${page + 1}` : null,
+        path: baseUrl,
+        per_page: perPage,
+        prev_page_url: page > 1 ? `${baseUrl}?page=${page - 1}` : null,
+        to: count > 0 ? Math.min(offset + perPage, count) : null,
+        total: count
       });
     } catch (error) {
       console.error('Get favourites error:', error);
@@ -280,7 +355,18 @@ export class AuthController {
       }
 
       // Check if service exists
-      const service = await Service.findByPk(service_id);
+      const service = await Service.findByPk(service_id, {
+        include: [
+          {
+            model: Category,
+            as: 'category',
+          },
+          {
+            model: Label,
+            as: 'label',
+          },
+        ],
+      });
       if (!service) {
         return res.status(404).json({ message: 'Service not found' });
       }
@@ -299,7 +385,39 @@ export class AuthController {
         service_id,
       });
 
-      return res.status(201).json({ success: true, data: { favourite } });
+      // Return the service data with favourite information
+      return res.status(201).json({
+        id: favourite.id,
+        user_id: favourite.user_id,
+        service_id: favourite.service_id,
+        created_at: favourite.createdAt,
+        updated_at: favourite.updatedAt,
+        category_id: service.category_id,
+        label_id: service.label_id,
+        parent_id: service.parent_id,
+        paypal_product_id: service.paypal_product_id,
+        paypal_plan_id: service.paypal_plan_id,
+        stripe_product_id: service.stripe_product_id,
+        stripe_plan_id: service.stripe_plan_id,
+        name: service.name,
+        image: service.image,
+        is_url: service.is_url,
+        price: service.price,
+        discounted_price: service.discounted_price,
+        service_type: service.service_type,
+        detail: service.detail,
+        brief_detail: service.brief_detail,
+        includes: service.includes,
+        description: service.description,
+        requirements: service.requirements,
+        notes: service.notes,
+        tags: service.tags,
+        is_active: service.is_active,
+        is_variation: service.is_variation,
+        detail_data: service.detail_data,
+        is_session: service.is_session,
+        label_name: service.label?.name || null
+      });
     } catch (error) {
       console.error('Add favourite error:', error);
       return res.status(500).json({ message: 'Server error' });
@@ -311,6 +429,7 @@ export class AuthController {
     try {
       const userId = req.user.id;
       const { service_id } = req.params;
+      console.log(req.params);
 
       const favourite = await Favourite.findOne({
         where: { user_id: userId, service_id },
