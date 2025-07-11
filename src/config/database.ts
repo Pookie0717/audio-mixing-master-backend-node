@@ -5,10 +5,10 @@ dotenv.config();
 
 const sequelize = new Sequelize(
   process.env['DATABASE_NAME'] || 'audio_mixing',
-  process.env['DATABASE_USER'] || 'root',
-  process.env['DATABASE_PASSWORD'] || 'a279043a',
+  process.env['DATABASE_USER'] || 'adminuser',
+  process.env['DATABASE_PASSWORD'] || 'AndyKaPass_123',
   {
-    host: process.env['DATABASE_HOST'] || 'localhost',
+    host: process.env['DATABASE_HOST'] || '69.55.54.209',
     port: parseInt(process.env['DATABASE_PORT'] || '3306'),
     dialect: 'mysql',
     logging: process.env['NODE_ENV'] === 'development' ? console.log : false,
