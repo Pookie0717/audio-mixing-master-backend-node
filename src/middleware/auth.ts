@@ -75,20 +75,45 @@ export const optionalAuth = async (req: AuthRequest, _res: Response, next: NextF
 
 export const adminAuth = async (req: AuthRequest, res: Response, next: NextFunction) => {
   try {
-    await new Promise<void>((resolve, reject) => {
-      auth(req, res, (err) => {
-        if (err) reject(err);
-        else resolve();
-      });
-    });
+    const token = req.header('Authorization')?.replace('Bearer ', '');
+
+    if (!token) {
+      return res.status(401).json({ message: 'No token, authorization denied' });
+    }
+
+    // Handle admin token format: "id|jwt_token"
+    let jwtToken: string | undefined = token;
+    if (token && token.includes('|')) {
+      jwtToken = token.split('|')[1];
+    }
+
+    if (!jwtToken) {
+      return res.status(401).json({ message: 'Token is not valid' });
+    }
+
+    const decoded = jwt.verify(jwtToken, process.env['JWT_SECRET'] || 'fallback-secret') as any;
     
-    if (req.user?.role !== 'ADMIN') {
+    const user = await User.findByPk(decoded.id, {
+      attributes: ['id', 'first_name', 'last_name', 'email', 'role', 'is_active'],
+    });
+
+    if (!user) {
+      return res.status(401).json({ message: 'Token is not valid' });
+    }
+
+    if (user.is_active !== 1) {
+      return res.status(401).json({ message: 'Account is not active' });
+    }
+
+    // Check if user is admin
+    if (user.role !== 'admin' && user.role !== 'ADMIN') {
       return res.status(403).json({ message: 'Access denied. Admin only.' });
     }
-    
+
+    req.user = user;
     return next();
   } catch (error) {
-    return res.status(401).json({ message: 'Authentication failed' });
+    return res.status(401).json({ message: 'Token is not valid' });
   }
 };
 

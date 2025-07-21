@@ -6,6 +6,7 @@ Object.defineProperty(exports, "__esModule", { value: true });
 const sequelize_1 = require("sequelize");
 const database_1 = __importDefault(require("../config/database"));
 const bcryptjs_1 = __importDefault(require("bcryptjs"));
+const Revision_1 = __importDefault(require("./Revision"));
 class User extends sequelize_1.Model {
     async comparePassword(candidatePassword) {
         return bcryptjs_1.default.compare(candidatePassword, this.password);
@@ -82,5 +83,7 @@ User.init({
         },
     },
 });
+User.hasMany(Revision_1.default, { foreignKey: 'user_id', as: 'revisions' });
+Revision_1.default.belongsTo(User, { foreignKey: 'user_id', as: 'user' });
 exports.default = User;
 //# sourceMappingURL=User.js.map

@@ -8,6 +8,8 @@ const sequelize_1 = require("sequelize");
 const database_1 = __importDefault(require("../config/database"));
 const User_1 = __importDefault(require("./User"));
 const Service_1 = __importDefault(require("./Service"));
+const OrderCoupon_1 = __importDefault(require("./OrderCoupon"));
+const Revision_1 = __importDefault(require("./Revision"));
 class Order extends sequelize_1.Model {
 }
 exports.Order = Order;
@@ -161,4 +163,8 @@ Order.hasMany(OrderItem, { foreignKey: 'order_id', as: 'orderItems' });
 OrderItem.belongsTo(Order, { foreignKey: 'order_id', as: 'order' });
 OrderItem.belongsTo(Service_1.default, { foreignKey: 'service_id', as: 'service' });
 Service_1.default.hasMany(OrderItem, { foreignKey: 'service_id', as: 'orderItems' });
+Order.hasMany(OrderCoupon_1.default, { foreignKey: 'order_id', as: 'orderCoupons' });
+OrderCoupon_1.default.belongsTo(Order, { foreignKey: 'order_id', as: 'order' });
+Order.hasMany(Revision_1.default, { foreignKey: 'order_id', as: 'revisions' });
+Revision_1.default.belongsTo(Order, { foreignKey: 'order_id', as: 'order' });
 //# sourceMappingURL=Order.js.map

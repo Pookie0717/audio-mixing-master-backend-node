@@ -13,6 +13,11 @@ import Gallery from './Gallery';
 import FAQ from './FAQ';
 import UploadLeadGeneration from './UploadLeadGeneration';
 import ContactLeadGeneration from './ContactLeadGeneration';
+import Gift from './Gift';
+import Tag from './Tag';
+import Coupon from './Coupon';
+import OrderCoupon from './OrderCoupon';
+import Revision from './Revision';
 
 // Export all models
 export {
@@ -31,6 +36,11 @@ export {
   FAQ,
   UploadLeadGeneration,
   ContactLeadGeneration,
+  Gift,
+  Tag,
+  Coupon,
+  OrderCoupon,
+  Revision,
 };
 
 // Export default for convenience

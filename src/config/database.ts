@@ -3,13 +3,29 @@ import dotenv from 'dotenv';
 
 dotenv.config();
 
+// Validate required environment variables
+const requiredEnvVars = [
+  'DB_DATABASE',
+  'DB_USERNAME', 
+  'DB_PASSWORD',
+  'DB_HOST',
+  'DB_PORT'
+];
+
+
+const missingEnvVars = requiredEnvVars.filter(varName => !process.env[varName]);
+
+if (missingEnvVars.length > 0) {
+  throw new Error(`Missing required environment variables: ${missingEnvVars.join(', ')}`);
+}
+
 const sequelize = new Sequelize(
-  process.env['DATABASE_NAME'] || 'audio_mixing',
-  process.env['DATABASE_USER'] || 'adminuser',
-  process.env['DATABASE_PASSWORD'] || 'AndyKaPass_123',
+  process.env['DB_DATABASE']!,
+  process.env['DB_USERNAME']!,
+  process.env['DB_PASSWORD']!,
   {
-    host: process.env['DATABASE_HOST'] || '69.55.54.209',
-    port: parseInt(process.env['DATABASE_PORT'] || '3306'),
+    host: process.env['DB_HOST']!,
+    port: parseInt(process.env['DB_PORT']!),
     dialect: 'mysql',
     logging: process.env['NODE_ENV'] === 'development' ? console.log : false,
     pool: {

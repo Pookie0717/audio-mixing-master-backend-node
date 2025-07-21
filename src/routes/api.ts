@@ -13,15 +13,19 @@ import { FaqController } from '../controllers/FaqController';
 import { TestimonialController } from '../controllers/TestimonialController';
 import { UploadLeadController } from '../controllers/UploadLeadController';
 import { ContactLeadController } from '../controllers/ContactLeadController';
-// Import controllers (to be implemented)
-// import AuthController from '../controllers/AuthController';
-// ... (other controllers)
+import { ServiceTagController } from '../controllers/ServiceTagController';
+import { GiftController } from '../controllers/GiftController';
+import { LeadGenerationController } from '../controllers/LeadGenerationController';
+import { ServicesPromoCodeController } from '../controllers/ServicesPromoCodeController';
+import { PayPalController } from '../controllers/PayPalController';
+import { ExcelController } from '../controllers/ExcelController';
 
 const router = Router();
 
 // AUTH ROUTES
 router.post('/auth/register', AuthController.register);
 router.post('/auth/login', AuthController.login);
+router.post('/auth/admin/login', AuthController.adminLogin);
 router.get('/auth/verify-email/:id/:hash', (_req: Request, _res: Response) => {/* AuthController.emailVerify */});
 router.post('/auth/forgot-password', AuthController.forgotPassword);
 router.post('/auth/reset-password', AuthController.resetPassword);
@@ -36,25 +40,25 @@ router.get('/my-favourites/count', auth, AuthController.getFavouriteCount);
 
 // PUBLIC ROUTES
 router.get('/sample-audios', SampleAudioController.index);
-router.get('/sample-audios/:id', (_req: Request, _res: Response) => {/* SampleAudioController.show */});
+router.get('/sample-audios/:id', SampleAudioController.show);
 router.get('/gallary', GalleryController.index);
 router.get('/gallary/:id', GalleryController.show);
 router.get('/categories', CategoryController.index);
 // router.get('/categories/:id', CategoryController.show);
 router.get('/categories/with-count', CategoryController.getWithServices);
-router.get('/tags', (_req: Request, _res: Response) => {/* ServiceTagController.index */});
+router.get('/tags', ServiceTagController.index);
 router.get('/services', ServiceController.index);
 router.get('/services/:tag', ServiceController.show);
 router.get('/services/search', ServiceController.search);
 router.get('/services/category/:categoryId', ServiceController.getByCategory);
 router.get('/service-details/:id', ServiceController.getServiceDetails);
-router.get('/services-list', (_req: Request, _res: Response) => {/* AdminServiceController.serviceList */});
-router.get('/my-gifts', (_req: Request, _res: Response) => {/* GiftController.index */});
-router.get('/my-gifts/:id', (_req: Request, _res: Response) => {/* GiftController.show */});
-router.get('/lead/generation', (_req: Request, _res: Response) => {/* leadGenerationController.index */});
-router.get('/lead/generation/:id', (_req: Request, _res: Response) => {/* leadGenerationController.show */});
-router.post('/lead/generation', (_req: Request, _res: Response) => {/* leadGenerationController.store */});
-router.delete('/lead/generation/:id', (_req: Request, _res: Response) => {/* leadGenerationController.destroy */});
+router.get('/services-list', ServiceController.index);
+router.get('/my-gifts', GiftController.index);
+router.get('/my-gifts/:id', GiftController.show);
+router.get('/lead/generation', LeadGenerationController.index);
+router.get('/lead/generation/:id', LeadGenerationController.show);
+router.post('/lead/generation', LeadGenerationController.store);
+router.delete('/lead/generation/:id', LeadGenerationController.destroy);
 router.get('/upload/lead/gen', UploadLeadController.index);
 router.get('/upload/lead/gen/:id', UploadLeadController.show);
 
@@ -64,22 +68,22 @@ router.post('/upload/lead/gen', upload.none(), UploadLeadController.store);
 router.delete('/upload/lead/gen/:id', UploadLeadController.destroy);
 router.get('/download/zip/lead/:id', UploadLeadController.downloadZip);
 router.post('/download-audio/:id', UploadLeadController.downloadAudio);
-router.get('/export/lead', (_req: Request, _res: Response) => {/* leadGenerationController.exportLead */});
+router.get('/export/lead', LeadGenerationController.exportLead);
 router.get('/contact/lead/generation', ContactLeadController.index);
 router.get('/contact/lead/generation/:id', ContactLeadController.show);
 router.post('/contact/lead/generation', ContactLeadController.store);
 router.delete('/contact/lead/generation/:id', ContactLeadController.destroy);
-router.get('/promo-codes', (_req: Request, _res: Response) => {/* ServicesPromoCodeController.index */});
-router.get('/promo-codes/:id', (_req: Request, _res: Response) => {/* ServicesPromoCodeController.show */});
-router.put('/promo-codes/:id', (_req: Request, _res: Response) => {/* ServicesPromoCodeController.update */});
-router.delete('/promo-codes/:id', (_req: Request, _res: Response) => {/* ServicesPromoCodeController.destroy */});
-router.post('/insert-service-promo-codes', (_req: Request, _res: Response) => {/* ServicesPromoCodeController.insertServicePromoCodes */});
-router.get('/my-promo-codes/verify/:code', (_req: Request, _res: Response) => {/* ServicesPromoCodeController.verifyPromoCodes */});
+router.get('/promo-codes', ServicesPromoCodeController.index);
+router.get('/promo-codes/:id', ServicesPromoCodeController.show);
+router.put('/promo-codes/:id', ServicesPromoCodeController.update);
+router.delete('/promo-codes/:id', ServicesPromoCodeController.destroy);
+router.post('/insert-service-promo-codes', ServicesPromoCodeController.insertServicePromoCodes);
+router.get('/my-promo-codes/verify/:code', ServicesPromoCodeController.verifyPromoCodes);
 router.get('/faq-list', FaqController.FaqList);
 router.get('/testimonial-list', TestimonialController.TestimonialList);
-router.post('/buy-revision', (_req: Request, _res: Response) => {/* PayPalController.revisionSuccess */});
-router.post('/order/update-status/:id', (_req: Request, _res: Response) => {/* OrderController.orderUpdateStatus */});
-router.get('/generate-pdf', (_req: Request, _res: Response) => {/* ExcelController.exportOrders */});
+router.post('/buy-revision', PayPalController.revisionSuccess);
+router.post('/order/update-status/:id', OrderController.updateStatus);
+router.get('/generate-pdf', ExcelController.exportOrders);
 
 // AUTHENTICATED ROUTES (to be wrapped with auth middleware)
 router.get('/orders', auth, OrderController.index);
@@ -103,13 +107,12 @@ router.post('/stripe/subscribe/guest', PaymentController.stripeSubscribe); // Gu
 router.post('/paypal', optionalAuth, PaymentController.paypal); // Works for both auth and guest users
 router.post('/create-subscription', auth, PaymentController.createSubscription);
 router.get('/fetch/order', auth, PaymentController.getOrderDetails);
-router.get('/order-details/:id', auth, PaymentController.orderDetails);
 router.get('/user-orders/:user_id', auth, PaymentController.userOrders);
 router.post('/success', optionalAuth, PaymentController.success); // Works for both auth and guest users
 router.get('/cancel', optionalAuth, PaymentController.cancel); // Works for both auth and guest users
 
-// ADMIN ROUTES (to be wrapped with admin middleware)
-// router.use('/admin', adminMiddleware, adminRouter);
-// ... (add admin routes here)
+// ADMIN ROUTES
+import adminRouter from './admin';
+router.use('/admin', adminRouter);
 
 export default router; 

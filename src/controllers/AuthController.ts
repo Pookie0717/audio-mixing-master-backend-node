@@ -81,18 +81,18 @@ export class AuthController {
       // Check if user exists
       const user = await User.findOne({ where: { email } });
       if (!user) {
-        return res.status(400).json({ message: 'Invalid credentials' });
+        return res.status(400).json({ error: 'Incorrect email address or password' });
       }
 
       // Check if user is active
       if (user.is_active !== 1) {
-        return res.status(400).json({ message: 'Account is not active' });
+        return res.status(400).json({ error: 'Account is not active' });
       }
 
       // Check password
       const isPasswordValid = await user.comparePassword(password);
       if (!isPasswordValid) {
-        return res.status(400).json({ message: 'Invalid credentials' });
+        return res.status(400).json({ error: 'Incorrect email address or password' });
       }
 
       // Generate JWT token
@@ -107,7 +107,7 @@ export class AuthController {
         success: true,
         message: 'Login successful',
         data: {
-                      user: {
+            user: {
               id: user.id,
               name: user.first_name + ' ' + user.last_name,
               email: user.email,
@@ -482,6 +482,67 @@ export class AuthController {
       });
     } catch (error) {
       console.error('Get favourite count error:', error);
+      return res.status(500).json({ message: 'Server error' });
+    }
+  }
+
+  // Admin login
+  static async adminLogin(req: Request, res: Response) {
+    try {
+      const { email, password } = req.body;
+
+      // Validate required fields
+      if (!email || !password) {
+        return res.status(400).json({ message: 'Email and password are required' });
+      }
+
+      // Check if user exists
+      const user = await User.findOne({ where: { email } });
+      if (!user) {
+        return res.status(400).json({ error: 'Incorrect email address or password' });
+      }
+
+      // Check if user is admin
+      if (user.role !== 'admin' && user.role !== 'ADMIN') {
+        return res.status(403).json({ error: 'Access denied. Admin only.' });
+      }
+
+      // Check if user is active
+      if (user.is_active !== 1) {
+        return res.status(400).json({ error: 'Account is not active' });
+      }
+
+      // Check password
+      const isPasswordValid = await user.comparePassword(password);
+      if (!isPasswordValid) {
+        return res.status(400).json({ error: 'Incorrect email address or password' });
+      }
+
+      // Generate JWT token with admin prefix
+      const secret = process.env['JWT_SECRET'] || 'fallback-secret';
+      const token = `${user.id}|${jwt.sign(
+        { id: user.id, role: user.role },
+        secret,
+        { expiresIn: '7d' }
+      )}`;
+
+      // Define admin permissions
+      const permissions = [
+        "orders",
+        "admins", 
+        "users",
+        "assign_orders",
+        "order_status_change"
+      ];
+
+      return res.json({
+        token,
+        id: user.id,
+        role: user.role.toLowerCase(),
+        permissions
+      });
+    } catch (error) {
+      console.error('Admin login error:', error);
       return res.status(500).json({ message: 'Server error' });
     }
   }

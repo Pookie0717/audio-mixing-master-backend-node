@@ -65,14 +65,14 @@ class AuthController {
             }
             const user = await User_1.default.findOne({ where: { email } });
             if (!user) {
-                return res.status(400).json({ message: 'Invalid credentials' });
+                return res.status(400).json({ error: 'Incorrect email address or password' });
             }
             if (user.is_active !== 1) {
-                return res.status(400).json({ message: 'Account is not active' });
+                return res.status(400).json({ error: 'Account is not active' });
             }
             const isPasswordValid = await user.comparePassword(password);
             if (!isPasswordValid) {
-                return res.status(400).json({ message: 'Invalid credentials' });
+                return res.status(400).json({ error: 'Incorrect email address or password' });
             }
             const secret = process.env['JWT_SECRET'] || 'fallback-secret';
             const token = jsonwebtoken_1.default.sign({ id: user.id }, secret, { expiresIn: '7d' });
@@ -394,6 +394,47 @@ class AuthController {
         }
         catch (error) {
             console.error('Get favourite count error:', error);
+            return res.status(500).json({ message: 'Server error' });
+        }
+    }
+    static async adminLogin(req, res) {
+        try {
+            const { email, password } = req.body;
+            if (!email || !password) {
+                return res.status(400).json({ message: 'Email and password are required' });
+            }
+            const user = await User_1.default.findOne({ where: { email } });
+            if (!user) {
+                return res.status(400).json({ error: 'Incorrect email address or password' });
+            }
+            if (user.role !== 'admin' && user.role !== 'ADMIN') {
+                return res.status(403).json({ error: 'Access denied. Admin only.' });
+            }
+            if (user.is_active !== 1) {
+                return res.status(400).json({ error: 'Account is not active' });
+            }
+            const isPasswordValid = await user.comparePassword(password);
+            if (!isPasswordValid) {
+                return res.status(400).json({ error: 'Incorrect email address or password' });
+            }
+            const secret = process.env['JWT_SECRET'] || 'fallback-secret';
+            const token = `${user.id}|${jsonwebtoken_1.default.sign({ id: user.id, role: user.role }, secret, { expiresIn: '7d' })}`;
+            const permissions = [
+                "orders",
+                "admins",
+                "users",
+                "assign_orders",
+                "order_status_change"
+            ];
+            return res.json({
+                token,
+                id: user.id,
+                role: user.role.toLowerCase(),
+                permissions
+            });
+        }
+        catch (error) {
+            console.error('Admin login error:', error);
             return res.status(500).json({ message: 'Server error' });
         }
     }

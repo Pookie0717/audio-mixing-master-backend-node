@@ -1,495 +1,121 @@
-import { Router, Request, Response } from 'express';
-// import { prisma } from '../index'; // Removed Prisma
+import { Router } from 'express';
+import multer from 'multer';
 import { adminAuth } from '../middleware/auth';
+import { AdminSampleAudioController } from '../controllers/AdminSampleAudioController';
+import { AdminGalleryController } from '../controllers/AdminGalleryController';
+import { AdminUserController } from '../controllers/AdminUserController';
+import { AdminLabelController } from '../controllers/AdminLabelController';
+import { AdminTagController } from '../controllers/AdminTagController';
+import { AdminCategoryController } from '../controllers/AdminCategoryController';
+import { AdminServiceController } from '../controllers/AdminServiceController';
+import { AdminCouponController } from '../controllers/AdminCouponController';
+import { AdminGiftController } from '../controllers/AdminGiftController';
+import { AdminOrderController } from '../controllers/AdminOrderController';
+import { RevisionController } from '../controllers/RevisionController';
+import { PaymentController } from '../controllers/PaymentController';
 
 const router = Router();
 
-// TODO: This entire file needs to be updated to use Sequelize or another ORM
-// All Prisma operations have been temporarily commented out and replaced with mock data
+// Configure multer for file uploads
+const upload = multer({
+  storage: multer.memoryStorage(),
+  limits: {
+    fileSize: 5 * 1024 * 1024, // 5MB limit
+  },
+});
 
 // Apply admin authentication to all routes
 router.use(adminAuth);
 
-// Get all users
-router.get('/users', async (_req: Request, res: Response) => {
-  try {
-    // TODO: Replace with Sequelize or other ORM
-    const users = [
-      {
-        id: '1',
-        name: 'Test User 1',
-        email: 'user1@example.com',
-        phone: '+1234567890',
-        role: 'USER',
-        status: 'ACTIVE',
-        createdAt: new Date(),
-        updatedAt: new Date(),
-      },
-      {
-        id: '2',
-        name: 'Test User 2',
-        email: 'user2@example.com',
-        phone: '+0987654321',
-        role: 'USER',
-        status: 'ACTIVE',
-        createdAt: new Date(),
-        updatedAt: new Date(),
-      },
-    ];
+// Sample Audios
+router.get('/sample-audios', AdminSampleAudioController.index);
+router.post('/sample-audios', upload.fields([
+  { name: 'before_audio', maxCount: 1 },
+  { name: 'after_audio', maxCount: 1 }
+]), AdminSampleAudioController.store);
+router.get('/sample-audios/:id', AdminSampleAudioController.show);
+router.post('/sample-audios/:id', upload.fields([
+  { name: 'before_audio', maxCount: 1 },
+  { name: 'after_audio', maxCount: 1 }
+]), AdminSampleAudioController.update);
+router.delete('/sample-audios/:id', AdminSampleAudioController.destroy);
+router.put('/sample-audios/:id/status', AdminSampleAudioController.updateStatus);
 
-    res.json({
-      success: true,
-      data: { users },
-    });
-  } catch (error) {
-    console.error('Get users error:', error);
-    res.status(500).json({ message: 'Server error' });
-  }
-});
+// Gallery
+router.get('/gallary', AdminGalleryController.index);
+router.post('/gallary', upload.single('image'), AdminGalleryController.store);
+router.get('/gallary/:id', AdminGalleryController.show);
+router.put('/gallary/:id', AdminGalleryController.update);
+router.delete('/gallary/:id', AdminGalleryController.destroy);
 
-// Get user by ID
-router.get('/users/:id', async (req: Request, res: Response) => {
-  try {
-    const { id } = req.params;
+// Users
+router.get('/users', AdminUserController.index);
+router.post('/users', AdminUserController.store);
+router.get('/users/:id', AdminUserController.show);
+router.put('/users/:id', AdminUserController.update);
+router.delete('/users/:id', AdminUserController.destroy);
+router.put('/users/:id/status', AdminUserController.updateStatus);
+router.post('/engineer/store', AdminUserController.storeEngineer);
+router.get('/engineer/list', AdminUserController.listEngineer);
+router.get('/engineer/:id', AdminUserController.showEngineer);
 
-    if (!id) {
-      return res.status(400).json({ message: 'User ID is required' });
-    }
+// Labels
+router.get('/labels', AdminLabelController.index);
+router.post('/labels', AdminLabelController.store);
+router.get('/labels/:id', AdminLabelController.show);
+router.put('/labels/:id', AdminLabelController.update);
+router.delete('/labels/:id', AdminLabelController.destroy);
 
-    // TODO: Replace with Sequelize or other ORM
-    const user = {
-      id,
-      name: 'Test User',
-      email: 'test@example.com',
-      phone: '+1234567890',
-      address: '123 Test St',
-      city: 'Test City',
-      state: 'Test State',
-      country: 'Test Country',
-      zipCode: '12345',
-      profileImage: null,
-      role: 'USER',
-      status: 'ACTIVE',
-      createdAt: new Date(),
-      updatedAt: new Date(),
-    };
+// Tags
+router.get('/tags', AdminTagController.index);
+router.post('/tags', AdminTagController.store);
+router.get('/tags/:id', AdminTagController.show);
+router.put('/tags/:id', AdminTagController.update);
+router.delete('/tags/:id', AdminTagController.destroy);
 
-    return res.json({
-      success: true,
-      data: { user },
-    });
-  } catch (error) {
-    console.error('Get user error:', error);
-    return res.status(500).json({ message: 'Server error' });
-  }
-});
+// Categories
+router.get('/categories', AdminCategoryController.index);
+router.post('/categories', AdminCategoryController.store);
+router.get('/categories/:id', AdminCategoryController.show);
+router.put('/categories/:id', AdminCategoryController.update);
+router.delete('/categories/:id', AdminCategoryController.destroy);
+router.put('/categories/:id/status', AdminCategoryController.updateStatus);
 
-// Update user status
-router.put('/users/:id/status', async (req: Request, res: Response) => {
-  try {
-    const { id } = req.params;
-    const { status } = req.body;
+// Services
+router.get('/services', AdminServiceController.index);
+router.post('/services', upload.single('image'), AdminServiceController.store);
+router.get('/services/:id', AdminServiceController.show);
+router.put('/services/:id', upload.single('image'), AdminServiceController.update);
+router.delete('/services/:id', AdminServiceController.destroy);
+router.post('/services/:id/status', AdminServiceController.updateStatus);
+router.post('/services-update/:id', AdminServiceController.update);
+router.get('/services-list', AdminServiceController.serviceList);
 
-    if (!id) {
-      return res.status(400).json({ message: 'User ID is required' });
-    }
+// Coupons
+router.get('/coupons', AdminCouponController.index);
+router.get('/coupons/:id', AdminCouponController.show);
+router.post('/coupons', AdminCouponController.store);
+router.put('/coupons/:id', AdminCouponController.update);
+router.delete('/coupons/:id', AdminCouponController.destroy);
+router.put('/coupon-update/:id', AdminCouponController.updateStatus);
 
-    // TODO: Replace with Sequelize or other ORM
-    const user = {
-      id,
-      name: 'Test User',
-      email: 'test@example.com',
-      status,
-    };
+// Gifts
+router.get('/gifts', AdminGiftController.index);
+router.post('/gifts', upload.single('image'), AdminGiftController.store);
+router.get('/gifts/:id', AdminGiftController.show);
+router.put('/gifts/:id', upload.single('image'), AdminGiftController.update);
+router.delete('/gifts/:id', AdminGiftController.destroy);
+router.put('/gifts/:id/status', AdminGiftController.updateStatus);
 
-    return res.json({
-      success: true,
-      message: 'User status updated successfully',
-      data: { user },
-    });
-  } catch (error) {
-    console.error('Update user status error:', error);
-    return res.status(500).json({ message: 'Server error' });
-  }
-});
+// Orders
+router.get('/order', AdminOrderController.index);
+router.get('/order/:id', AdminOrderController.show);
+router.get('/order-details/:id', PaymentController.orderDetails);
+router.put('/order/update-status/:id', AdminOrderController.updateStatus);
+router.post('/order/upload-file/:id', AdminOrderController.orderUpdateFile);
+router.delete('/order/:id', AdminOrderController.destroy);
 
-// Get all categories
-router.get('/categories', async (_req: Request, res: Response) => {
-  try {
-    // TODO: Replace with Sequelize or other ORM
-    const categories = [
-      {
-        id: '1',
-        name: 'Mixing',
-        description: 'Audio mixing services',
-        image: null,
-        status: 'ACTIVE',
-        createdAt: new Date(),
-        updatedAt: new Date(),
-        _count: { services: 5 },
-      },
-      {
-        id: '2',
-        name: 'Mastering',
-        description: 'Audio mastering services',
-        image: null,
-        status: 'ACTIVE',
-        createdAt: new Date(),
-        updatedAt: new Date(),
-        _count: { services: 3 },
-      },
-    ];
-
-    return res.json({
-      success: true,
-      data: { categories },
-    });
-  } catch (error) {
-    console.error('Get categories error:', error);
-    return res.status(500).json({ message: 'Server error' });
-  }
-});
-
-// Create category
-router.post('/categories', async (req: Request, res: Response) => {
-  try {
-    const { name, description, image } = req.body;
-
-    // TODO: Replace with Sequelize or other ORM
-    const category = {
-      id: 'new-id',
-      name,
-      description,
-      image,
-      status: 'ACTIVE',
-      createdAt: new Date(),
-      updatedAt: new Date(),
-    };
-
-    return res.status(201).json({
-      success: true,
-      message: 'Category created successfully',
-      data: { category },
-    });
-  } catch (error) {
-    console.error('Create category error:', error);
-    return res.status(500).json({ message: 'Server error' });
-  }
-});
-
-// Update category
-router.put('/categories/:id', async (req: Request, res: Response) => {
-  try {
-    const { id } = req.params;
-    const { name, description, image } = req.body;
-
-    if (!id) {
-      return res.status(400).json({ message: 'Category ID is required' });
-    }
-
-    // TODO: Replace with Sequelize or other ORM
-    const category = {
-      id,
-      name,
-      description,
-      image,
-      status: 'ACTIVE',
-      createdAt: new Date(),
-      updatedAt: new Date(),
-    };
-
-    return res.json({
-      success: true,
-      message: 'Category updated successfully',
-      data: { category },
-    });
-  } catch (error) {
-    console.error('Update category error:', error);
-    return res.status(500).json({ message: 'Server error' });
-  }
-});
-
-// Update category status
-router.put('/categories/:id/status', async (req: Request, res: Response) => {
-  try {
-    const { id } = req.params;
-    const { status } = req.body;
-
-    if (!id) {
-      return res.status(400).json({ message: 'Category ID is required' });
-    }
-
-    // TODO: Replace with Sequelize or other ORM
-    const category = {
-      id,
-      name: 'Test Category',
-      description: 'Test description',
-      image: null,
-      status,
-      createdAt: new Date(),
-      updatedAt: new Date(),
-    };
-
-    return res.json({
-      success: true,
-      message: 'Category status updated successfully',
-      data: { category },
-    });
-  } catch (error) {
-    console.error('Update category status error:', error);
-    return res.status(500).json({ message: 'Server error' });
-  }
-});
-
-// Get all services
-router.get('/services', async (_req: Request, res: Response) => {
-  try {
-    // TODO: Replace with Sequelize or other ORM
-    const services = [
-      {
-        id: '1',
-        name: 'Basic Mixing',
-        description: 'Basic audio mixing service',
-        price: 100,
-        duration: '2-3 days',
-        categoryId: '1',
-        status: 'ACTIVE',
-        createdAt: new Date(),
-        updatedAt: new Date(),
-      },
-      {
-        id: '2',
-        name: 'Premium Mastering',
-        description: 'Premium audio mastering service',
-        price: 200,
-        duration: '3-5 days',
-        categoryId: '2',
-        status: 'ACTIVE',
-        createdAt: new Date(),
-        updatedAt: new Date(),
-      },
-    ];
-
-    return res.json({
-      success: true,
-      data: { services },
-    });
-  } catch (error) {
-    console.error('Get services error:', error);
-    return res.status(500).json({ message: 'Server error' });
-  }
-});
-
-// Create service
-router.post('/services', async (req: Request, res: Response) => {
-  try {
-    const { name, description, price, duration, categoryId } = req.body;
-
-    // TODO: Replace with Sequelize or other ORM
-    const service = {
-      id: 'new-service-id',
-      name,
-      description,
-      price,
-      duration,
-      categoryId,
-      status: 'ACTIVE',
-      createdAt: new Date(),
-      updatedAt: new Date(),
-    };
-
-    return res.status(201).json({
-      success: true,
-      message: 'Service created successfully',
-      data: { service },
-    });
-  } catch (error) {
-    console.error('Create service error:', error);
-    return res.status(500).json({ message: 'Server error' });
-  }
-});
-
-// Update service
-router.put('/services/:id', async (req: Request, res: Response) => {
-  try {
-    const { id } = req.params;
-    const { name, description, price, duration, categoryId } = req.body;
-
-    if (!id) {
-      return res.status(400).json({ message: 'Service ID is required' });
-    }
-
-    // TODO: Replace with Sequelize or other ORM
-    const service = {
-      id,
-      name,
-      description,
-      price,
-      duration,
-      categoryId,
-      status: 'ACTIVE',
-      createdAt: new Date(),
-      updatedAt: new Date(),
-    };
-
-    return res.json({
-      success: true,
-      message: 'Service updated successfully',
-      data: { service },
-    });
-  } catch (error) {
-    console.error('Update service error:', error);
-    return res.status(500).json({ message: 'Server error' });
-  }
-});
-
-// Update service status
-router.put('/services/:id/status', async (req: Request, res: Response) => {
-  try {
-    const { id } = req.params;
-    const { status } = req.body;
-
-    if (!id) {
-      return res.status(400).json({ message: 'Service ID is required' });
-    }
-
-    // TODO: Replace with Sequelize or other ORM
-    const service = {
-      id,
-      name: 'Test Service',
-      description: 'Test service description',
-      price: 100,
-      duration: '2-3 days',
-      categoryId: '1',
-      status,
-      createdAt: new Date(),
-      updatedAt: new Date(),
-    };
-
-    return res.json({
-      success: true,
-      message: 'Service status updated successfully',
-      data: { service },
-    });
-  } catch (error) {
-    console.error('Update service status error:', error);
-    return res.status(500).json({ message: 'Server error' });
-  }
-});
-
-// Get all orders
-router.get('/orders', async (_req: Request, res: Response) => {
-  try {
-    // TODO: Replace with Sequelize or other ORM
-    const orders = [
-      {
-        id: '1',
-        userId: '1',
-        totalAmount: 100,
-        status: 'PENDING',
-        createdAt: new Date(),
-        updatedAt: new Date(),
-      },
-      {
-        id: '2',
-        userId: '2',
-        totalAmount: 200,
-        status: 'COMPLETED',
-        createdAt: new Date(),
-        updatedAt: new Date(),
-      },
-    ];
-
-    return res.json({
-      success: true,
-      data: { orders },
-    });
-  } catch (error) {
-    console.error('Get orders error:', error);
-    return res.status(500).json({ message: 'Server error' });
-  }
-});
-
-// Get order by ID
-router.get('/orders/:id', async (req: Request, res: Response) => {
-  try {
-    const { id } = req.params;
-
-    if (!id) {
-      return res.status(400).json({ message: 'Order ID is required' });
-    }
-
-    // TODO: Replace with Sequelize or other ORM
-    const order = {
-      id,
-      userId: '1',
-      totalAmount: 100,
-      status: 'PENDING',
-      createdAt: new Date(),
-      updatedAt: new Date(),
-    };
-
-    return res.json({
-      success: true,
-      data: { order },
-    });
-  } catch (error) {
-    console.error('Get order error:', error);
-    return res.status(500).json({ message: 'Server error' });
-  }
-});
-
-// Update order status
-router.put('/orders/:id/status', async (req: Request, res: Response) => {
-  try {
-    const { id } = req.params;
-    const { status } = req.body;
-
-    if (!id) {
-      return res.status(400).json({ message: 'Order ID is required' });
-    }
-
-    // TODO: Replace with Sequelize or other ORM
-    const order = {
-      id,
-      userId: '1',
-      totalAmount: 100,
-      status,
-      createdAt: new Date(),
-      updatedAt: new Date(),
-    };
-
-    return res.json({
-      success: true,
-      message: 'Order status updated successfully',
-      data: { order },
-    });
-  } catch (error) {
-    console.error('Update order status error:', error);
-    return res.status(500).json({ message: 'Server error' });
-  }
-});
-
-// Get dashboard stats
-router.get('/dashboard', async (_req: Request, res: Response) => {
-  try {
-    // TODO: Replace with Sequelize or other ORM
-    const stats = {
-      totalUsers: 100,
-      totalOrders: 50,
-      totalRevenue: 5000,
-      pendingOrders: 10,
-      completedOrders: 40,
-    };
-
-    return res.json({
-      success: true,
-      data: { stats },
-    });
-  } catch (error) {
-    console.error('Get dashboard stats error:', error);
-    return res.status(500).json({ message: 'Server error' });
-  }
-});
+// Revision
+router.post('/admin-flag/:id', RevisionController.flagAdmin);
 
 export default router; 

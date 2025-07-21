@@ -7,6 +7,7 @@ const sequelize_1 = require("sequelize");
 const database_1 = __importDefault(require("../config/database"));
 const Category_1 = __importDefault(require("./Category"));
 const Label_1 = __importDefault(require("./Label"));
+const Revision_1 = __importDefault(require("./Revision"));
 class Service extends sequelize_1.Model {
 }
 Service.init({
@@ -131,5 +132,7 @@ Service.belongsTo(Category_1.default, { foreignKey: 'category_id', as: 'category
 Category_1.default.hasMany(Service, { foreignKey: 'category_id', as: 'services' });
 Service.belongsTo(Label_1.default, { foreignKey: 'label_id', as: 'label' });
 Label_1.default.hasMany(Service, { foreignKey: 'label_id', as: 'services' });
+Service.hasMany(Revision_1.default, { foreignKey: 'service_id', as: 'revisions' });
+Revision_1.default.belongsTo(Service, { foreignKey: 'service_id', as: 'service' });
 exports.default = Service;
 //# sourceMappingURL=Service.js.map

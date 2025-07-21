@@ -54,21 +54,22 @@ class PaymentController {
     }
     static async stripePay(req, res) {
         try {
-            const { cartItem, amount, currency = 'USD', promocode, userId: _userId, order_type, paymentMethodId, customerEmail, customerName } = req.body;
-            if (!cartItem || !amount) {
+            const { cart_items, amount, currency = 'USD', promoCode, user_id, order_type = 'one_time', payment_method_id, customerEmail, customerName } = req.body;
+            if (!cart_items || !amount) {
                 return res.status(400).json({ message: 'Cart items and amount are required' });
             }
             const userEmail = req.user?.email || customerEmail;
             const userName = req.user ? `${req.user.first_name} ${req.user.last_name}` : customerName;
-            const currentUserId = req.user?.id || 'guest';
-            if (paymentMethodId) {
+            const currentUserId = req.user?.id || user_id || 'guest';
+            if (payment_method_id) {
                 try {
                     const paymentIntent = await (0, PaymentService_1.createStripePaymentIntent)(parseFloat(amount), currency.toLowerCase());
                     const stripe = require('stripe')(process.env['STRIPE_SECRET_KEY']);
                     const paymentIntentResult = await stripe.paymentIntents.confirm(paymentIntent.id, {
-                        payment_method: paymentMethodId,
+                        payment_method: payment_method_id,
                         return_url: `${process.env['FRONTEND_URL']}/success`,
                     });
+                    console.log(`paymentIntentResult: ${paymentIntentResult}`);
                     return res.json({
                         success: true,
                         paymentIntent: paymentIntentResult,
@@ -81,7 +82,7 @@ class PaymentController {
                 }
             }
             else {
-                const lineItems = cartItem.map((item) => ({
+                const lineItems = cart_items.map((item) => ({
                     price_data: {
                         product_data: {
                             name: item.service_name,
@@ -99,8 +100,8 @@ class PaymentController {
                         user_id: currentUserId,
                     },
                     customer_email: userEmail,
-                    success_url: `${process.env['FRONTEND_URL']}/success?amount=${amount}&currency=${currency}&promocode=${promocode || ''}&cartItem=${encodeURIComponent(JSON.stringify(cartItem))}&user_id=${currentUserId}&transaction_id={CHECKOUT_SESSION_ID}&payer_name=${userName}&payer_email=${userEmail}&order_type=${order_type}`,
-                    cancel_url: `${process.env['FRONTEND_URL']}/cancel?amount=${amount}&currency=${currency}&promocode=${promocode || ''}&cartItem=${encodeURIComponent(JSON.stringify(cartItem))}&transaction_id={CHECKOUT_SESSION_ID}`,
+                    success_url: `${process.env['FRONTEND_URL']}/success?amount=${amount}&currency=${currency}&promoCode=${promoCode || ''}&cart_items=${encodeURIComponent(JSON.stringify(cart_items))}&user_id=${currentUserId}&transaction_id={CHECKOUT_SESSION_ID}&payer_name=${userName}&payer_email=${userEmail}&order_type=${order_type}`,
+                    cancel_url: `${process.env['FRONTEND_URL']}/cancel?amount=${amount}&currency=${currency}&promoCode=${promoCode || ''}&cart_items=${encodeURIComponent(JSON.stringify(cart_items))}&transaction_id={CHECKOUT_SESSION_ID}`,
                 });
                 return res.json({ url: session.url });
             }
@@ -199,24 +200,85 @@ class PaymentController {
     static async orderDetails(req, res) {
         try {
             const { id } = req.params;
-            const order = await models_1.Order.findOne({
-                where: { id },
-                include: [
-                    { model: models_1.User, as: 'user' },
-                    { model: models_1.Service, as: 'service' },
-                ],
-            });
+            const order = await models_1.Order.findByPk(id);
             if (!order) {
-                return res.status(404).json({ message: 'Order not found' });
+                return res.status(200).json({ error: 'No order found' });
             }
-            return res.json({
-                success: true,
-                data: { order },
+            const orderItems = await models_1.OrderItem.findAll({
+                where: { order_id: id }
             });
+            let coupon = null;
+            if (order.promocode) {
+                coupon = await models_1.OrderCoupon.findOne({
+                    where: {
+                        code: order.promocode,
+                        order_id: id
+                    }
+                });
+            }
+            const user = await models_1.User.findByPk(order.user_id);
+            const username = user ? `${user.first_name} ${user.last_name}` : order.payer_name;
+            const useremail = user?.email || order.payer_email;
+            const revision = await models_1.Revision.findAll({ where: { order_id: id } });
+            const serviceIds = orderItems.map(item => item.service_id);
+            let is_giftcard = 0;
+            if (serviceIds.length > 0) {
+                const hasGiftcard = await models_1.Service.findOne({
+                    where: {
+                        id: serviceIds,
+                        category_id: 15
+                    }
+                });
+                is_giftcard = hasGiftcard ? 1 : 0;
+            }
+            const orderDetails = {
+                order: {
+                    id: order.id,
+                    user_id: order.user_id,
+                    transaction_id: order.transaction_id,
+                    amount: order.amount,
+                    currency: order.currency,
+                    promocode: order.promocode,
+                    payer_name: order.payer_name,
+                    payer_email: order.payer_email,
+                    payment_status: order.payment_status,
+                    Order_status: order.Order_status,
+                    order_type: order.order_type,
+                    is_active: order.is_active,
+                    payment_method: order.payment_method,
+                    order_reference_id: order.order_reference_id,
+                    created_at: order.createdAt,
+                    updated_at: order.updatedAt
+                },
+                order_items: orderItems.map(item => ({
+                    id: item.id,
+                    order_id: item.order_id,
+                    service_id: item.service_id,
+                    paypal_product_id: item.paypal_product_id,
+                    paypal_plan_id: item.paypal_plan_id,
+                    name: item.name,
+                    price: item.price,
+                    quantity: item.quantity,
+                    total_price: item.total_price,
+                    service_type: item.service_type,
+                    max_revision: item.max_revision,
+                    deliverable_files: item.deliverable_files,
+                    admin_is_read: item.admin_is_read,
+                    user_is_read: item.user_is_read,
+                    created_at: item.createdAt,
+                    updated_at: item.updatedAt
+                })),
+                coupon: coupon,
+                user_name: username,
+                user_email: useremail,
+                revision: revision,
+                is_giftcard: is_giftcard
+            };
+            return res.status(200).json(orderDetails);
         }
         catch (error) {
             console.error('Order details error:', error);
-            return res.status(500).json({ message: 'Server error' });
+            return res.status(500).json({ error: error instanceof Error ? error.message : 'Server error' });
         }
     }
     static async userOrders(req, res) {
@@ -227,16 +289,65 @@ class PaymentController {
             const orders = await models_1.Order.findAndCountAll({
                 where: { user_id },
                 include: [
-                    { model: models_1.Service, as: 'service' },
+                    {
+                        model: models_1.OrderItem,
+                        as: 'orderItems',
+                        include: [
+                            { model: models_1.Service, as: 'service' }
+                        ]
+                    },
                 ],
                 offset,
                 limit: parseInt(limit),
                 order: [['createdAt', 'DESC']],
             });
+            const transformedOrders = orders.rows.map(order => ({
+                order: {
+                    id: order.id,
+                    user_id: order.user_id,
+                    transaction_id: order.transaction_id,
+                    amount: order.amount,
+                    currency: order.currency,
+                    promocode: order.promocode,
+                    payer_name: order.payer_name,
+                    payer_email: order.payer_email,
+                    payment_status: order.payment_status,
+                    Order_status: order.Order_status,
+                    order_type: order.order_type,
+                    is_active: order.is_active,
+                    payment_method: order.payment_method,
+                    order_reference_id: order.order_reference_id,
+                    created_at: order.createdAt,
+                    updated_at: order.updatedAt
+                },
+                order_items: order.orderItems?.map(item => ({
+                    id: item.id,
+                    order_id: item.order_id,
+                    service_id: item.service_id,
+                    paypal_product_id: item.paypal_product_id,
+                    paypal_plan_id: item.paypal_plan_id,
+                    name: item.name,
+                    price: item.price,
+                    quantity: item.quantity,
+                    total_price: item.total_price,
+                    service_type: item.service_type,
+                    max_revision: item.max_revision,
+                    deliverable_files: item.deliverable_files,
+                    admin_is_read: item.admin_is_read,
+                    user_is_read: item.user_is_read,
+                    created_at: item.createdAt,
+                    updated_at: item.updatedAt
+                })) || [],
+                coupon: null,
+                user_name: order.payer_name,
+                user_email: order.payer_email,
+                revision: [],
+                is_giftcard: 0
+            }));
             return res.json({
                 success: true,
                 data: {
-                    orders: orders.rows,
+                    orders: transformedOrders,
                     pagination: {
                         page: parseInt(page),
                         limit: parseInt(limit),
@@ -253,7 +364,7 @@ class PaymentController {
     }
     static async success(req, res) {
         try {
-            const { user_id, transaction_id, amount, payer_name, payer_email, order_type, payment_method, cartItems, promocode, order_id } = req.body;
+            const { user_id, transaction_id, amount, payer_name, payer_email, order_type, payment_method, cart_items, promoCode, order_id } = req.body;
             console.log('Payment success request body:', {
                 user_id,
                 transaction_id,
@@ -262,11 +373,11 @@ class PaymentController {
                 payer_email,
                 order_type,
                 payment_method,
-                cartItems: cartItems?.length,
-                promocode,
+                cart_items: cart_items?.length,
+                promoCode,
                 order_id
             });
-            if (!transaction_id || !amount || !payer_name || !payer_email || !order_type || !payment_method || !cartItems) {
+            if (!transaction_id || !amount || !payer_name || !payer_email || !order_type || !payment_method || !cart_items) {
                 return res.status(400).json({ message: 'Missing required fields' });
             }
             let user;
@@ -300,7 +411,7 @@ class PaymentController {
                 transaction_id,
                 amount: parseFloat(amount),
                 currency: 'USD',
-                promocode: promocode || null,
+                promocode: promoCode || null,
                 Order_status: 0,
                 is_active: 1,
                 payer_name,
@@ -312,7 +423,7 @@ class PaymentController {
             });
             console.log('Order created with ID:', order.id);
             let totalAmount = 0;
-            for (const item of cartItems) {
+            for (const item of cart_items) {
                 const service = await models_1.Service.findByPk(item.service_id);
                 if (service && service.category_id === 15) {
                     const giftCode = `gift-${(0, uuid_1.v4)().toUpperCase().replace(/-/g, '')}`;
@@ -339,14 +450,14 @@ class PaymentController {
                 });
                 totalAmount += parseFloat(item.total_price);
             }
-            if (promocode) {
-                if (promocode.startsWith('gift-')) {
+            if (promoCode) {
+                if (promoCode.startsWith('gift-')) {
                 }
                 else {
                 }
             }
             if (order_type === 'one_time') {
-                for (const item of cartItems) {
+                for (const item of cart_items) {
                     await models_1.Cart.destroy({
                         where: {
                             service_id: item.service_id,

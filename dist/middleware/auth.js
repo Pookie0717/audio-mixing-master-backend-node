@@ -60,21 +60,35 @@ const optionalAuth = async (req, _res, next) => {
 exports.optionalAuth = optionalAuth;
 const adminAuth = async (req, res, next) => {
     try {
-        await new Promise((resolve, reject) => {
-            (0, exports.auth)(req, res, (err) => {
-                if (err)
-                    reject(err);
-                else
-                    resolve();
-            });
+        const token = req.header('Authorization')?.replace('Bearer ', '');
+        if (!token) {
+            return res.status(401).json({ message: 'No token, authorization denied' });
+        }
+        let jwtToken = token;
+        if (token && token.includes('|')) {
+            jwtToken = token.split('|')[1];
+        }
+        if (!jwtToken) {
+            return res.status(401).json({ message: 'Token is not valid' });
+        }
+        const decoded = jsonwebtoken_1.default.verify(jwtToken, process.env['JWT_SECRET'] || 'fallback-secret');
+        const user = await User_1.default.findByPk(decoded.id, {
+            attributes: ['id', 'first_name', 'last_name', 'email', 'role', 'is_active'],
         });
-        if (req.user?.role !== 'ADMIN') {
+        if (!user) {
+            return res.status(401).json({ message: 'Token is not valid' });
+        }
+        if (user.is_active !== 1) {
+            return res.status(401).json({ message: 'Account is not active' });
+        }
+        if (user.role !== 'admin' && user.role !== 'ADMIN') {
             return res.status(403).json({ message: 'Access denied. Admin only.' });
         }
+        req.user = user;
         return next();
     }
     catch (error) {
-        return res.status(401).json({ message: 'Authentication failed' });
+        return res.status(401).json({ message: 'Token is not valid' });
     }
 };
 exports.adminAuth = adminAuth;

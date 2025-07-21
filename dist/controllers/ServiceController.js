@@ -167,11 +167,28 @@ class ServiceController {
     }
     static async show(req, res) {
         try {
-            const id = req.params['tag'];
+            const tagSlug = req.params['tag'];
             const page = parseInt(req.query['page']) || 1;
             const perPage = parseInt(req.query['per_page']) || 10;
             const offset = (page - 1) * perPage;
-            const where = { category_id: id, is_active: 1 };
+            const tagName = tagSlug?.replace(/-/g, ' ') || '';
+            const tag = await models_1.Tag.findOne({
+                where: {
+                    tag_name: tagName,
+                    is_active: 1
+                }
+            });
+            if (!tag) {
+                return res.status(404).json({
+                    message: `Tag not found: ${tagName}`,
+                    tag: tagName
+                });
+            }
+            let where = {
+                is_active: 1,
+                is_variation: 0
+            };
+            where.tags = { [sequelize_1.Op.like]: `%${tag.tag_name}%` };
             const { count, rows: services } = await models_1.Service.findAndCountAll({
                 where,
                 include: [
@@ -187,10 +204,14 @@ class ServiceController {
                 ],
                 offset,
                 limit: perPage,
-                order: [['createdAt', 'DESC']],
+                order: [['created_at', 'DESC']],
             });
             if (!services || services.length === 0) {
-                return res.status(404).json({ message: 'Service not found' });
+                return res.status(404).json({
+                    message: `No services found for tag: ${tag.tag_name}`,
+                    tag: tag.tag_name,
+                    tag_slug: tagSlug
+                });
             }
             const lastPage = Math.ceil(count / perPage);
             const servicesWithNames = services.map((service) => {

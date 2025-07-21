@@ -2,6 +2,7 @@ import { DataTypes, Model, Optional } from 'sequelize';
 import sequelize from '../config/database';
 import Category from './Category';
 import Label from './Label';
+import Revision from './Revision';
 
 interface ServiceAttributes {
   id: number;
@@ -196,5 +197,9 @@ Service.belongsTo(Category, { foreignKey: 'category_id', as: 'category' });
 Category.hasMany(Service, { foreignKey: 'category_id', as: 'services' });
 Service.belongsTo(Label, { foreignKey: 'label_id', as: 'label' });
 Label.hasMany(Service, { foreignKey: 'label_id', as: 'services' });
+
+// Revision associations
+Service.hasMany(Revision, { foreignKey: 'service_id', as: 'revisions' });
+Revision.belongsTo(Service, { foreignKey: 'service_id', as: 'service' });
 
 export default Service; 

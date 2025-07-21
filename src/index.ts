@@ -46,6 +46,8 @@ const allowedOrigins = process.env['ALLOWED_ORIGINS']?.split(',') || [
   'http://localhost:3000',
   'http://localhost:5173',
   'http://127.0.0.1:5173',
+  'http://localhost:5174',
+  'http://127.0.0.1:5174',
   'https://audio-mixing-master-test.vercel.app',
   'https://audio-mixing-master.vercel.app'
 ];
@@ -68,21 +70,87 @@ app.use(cors({
   exposedHeaders: ['Content-Range', 'X-Content-Range'],
 }));
 app.use(compression());
-app.use(morgan('combined'));
+// Enhanced logging for debugging
+app.use(morgan((tokens, req, res) => {
+  const method = tokens['method']?.(req, res) || 'UNKNOWN';
+  const url = tokens['url']?.(req, res) || '';
+  const status = tokens['status']?.(req, res) || '0';
+  const responseTime = tokens['response-time']?.(req, res) || '0';
+  
+  // Log only non-OPTIONS requests to reduce noise
+  if (method !== 'OPTIONS') {
+    console.log(`${method} ${url} ${status} ${responseTime}ms`);
+  }
+  
+  return `${method} ${url} ${status} ${responseTime}ms`;
+}));
 // app.use(limiter);
 app.use(express.json({ limit: '100mb' }));
 app.use(express.urlencoded({ extended: true, limit: '100mb' }));
 
-// Static files
-app.use('/uploads', express.static('uploads'));
-app.use('/public', express.static('public'));
+// Static files with CORS headers
+app.use('/uploads', (_req, res, next) => {
+  res.header('Access-Control-Allow-Origin', '*');
+  res.header('Access-Control-Allow-Methods', 'GET');
+  res.header('Access-Control-Allow-Headers', 'Content-Type');
+  next();
+}, express.static('uploads'));
 
-// Handle preflight requests
-app.options('*', cors());
+app.use('/public', (_req, res, next) => {
+  res.header('Access-Control-Allow-Origin', '*');
+  res.header('Access-Control-Allow-Methods', 'GET, OPTIONS');
+  res.header('Access-Control-Allow-Headers', 'Content-Type, Authorization');
+  res.header('Cross-Origin-Resource-Policy', 'cross-origin');
+  res.header('Cross-Origin-Embedder-Policy', 'unsafe-none');
+  next();
+}, express.static('public'));
+
+// Handle preflight requests more efficiently
+app.options('*', (req, res) => {
+  res.header('Access-Control-Allow-Origin', req.headers.origin || '*');
+  res.header('Access-Control-Allow-Methods', 'GET, POST, PUT, DELETE, PATCH, OPTIONS');
+  res.header('Access-Control-Allow-Headers', 'Content-Type, Authorization, X-Requested-With, Accept');
+  res.header('Access-Control-Allow-Credentials', 'true');
+  res.status(200).end();
+});
 
 // Root Route
 app.get("/", (_req, res) => {
   res.send("🎉 Backend is running!");
+});
+
+// Image serving route with CORS headers
+app.get('/public/gallary-images/:filename', (req, res) => {
+  res.header('Access-Control-Allow-Origin', '*');
+  res.header('Access-Control-Allow-Methods', 'GET, OPTIONS');
+  res.header('Access-Control-Allow-Headers', 'Content-Type, Authorization');
+  res.header('Cross-Origin-Resource-Policy', 'cross-origin');
+  res.header('Cross-Origin-Embedder-Policy', 'unsafe-none');
+  
+  const filePath = `${process.cwd()}/public/gallary-images/${req.params.filename}`;
+  res.sendFile(filePath, (err) => {
+    if (err) {
+      console.error('Error serving image:', err);
+      res.status(404).json({ error: 'Image not found' });
+    }
+  });
+});
+
+// Alias for gallery-images (correct spelling)
+app.get('/public/gallery-images/:filename', (req, res) => {
+  res.header('Access-Control-Allow-Origin', '*');
+  res.header('Access-Control-Allow-Methods', 'GET, OPTIONS');
+  res.header('Access-Control-Allow-Headers', 'Content-Type, Authorization');
+  res.header('Cross-Origin-Resource-Policy', 'cross-origin');
+  res.header('Cross-Origin-Embedder-Policy', 'unsafe-none');
+  
+  const filePath = `${process.cwd()}/public/gallary-images/${req.params.filename}`;
+  res.sendFile(filePath, (err) => {
+    if (err) {
+      console.error('Error serving image:', err);
+      res.status(404).json({ error: 'Image not found' });
+    }
+  });
 });
 
 // Health check

@@ -1,427 +1,99 @@
 "use strict";
+var __importDefault = (this && this.__importDefault) || function (mod) {
+    return (mod && mod.__esModule) ? mod : { "default": mod };
+};
 Object.defineProperty(exports, "__esModule", { value: true });
 const express_1 = require("express");
+const multer_1 = __importDefault(require("multer"));
 const auth_1 = require("../middleware/auth");
+const AdminSampleAudioController_1 = require("../controllers/AdminSampleAudioController");
+const AdminGalleryController_1 = require("../controllers/AdminGalleryController");
+const AdminUserController_1 = require("../controllers/AdminUserController");
+const AdminLabelController_1 = require("../controllers/AdminLabelController");
+const AdminTagController_1 = require("../controllers/AdminTagController");
+const AdminCategoryController_1 = require("../controllers/AdminCategoryController");
+const AdminServiceController_1 = require("../controllers/AdminServiceController");
+const AdminCouponController_1 = require("../controllers/AdminCouponController");
+const AdminGiftController_1 = require("../controllers/AdminGiftController");
+const AdminOrderController_1 = require("../controllers/AdminOrderController");
+const RevisionController_1 = require("../controllers/RevisionController");
+const PaymentController_1 = require("../controllers/PaymentController");
 const router = (0, express_1.Router)();
+const upload = (0, multer_1.default)({
+    storage: multer_1.default.memoryStorage(),
+    limits: {
+        fileSize: 5 * 1024 * 1024,
+    },
+});
 router.use(auth_1.adminAuth);
-router.get('/users', async (_req, res) => {
-    try {
-        const users = [
-            {
-                id: '1',
-                name: 'Test User 1',
-                email: 'user1@example.com',
-                phone: '+1234567890',
-                role: 'USER',
-                status: 'ACTIVE',
-                createdAt: new Date(),
-                updatedAt: new Date(),
-            },
-            {
-                id: '2',
-                name: 'Test User 2',
-                email: 'user2@example.com',
-                phone: '+0987654321',
-                role: 'USER',
-                status: 'ACTIVE',
-                createdAt: new Date(),
-                updatedAt: new Date(),
-            },
-        ];
-        res.json({
-            success: true,
-            data: { users },
-        });
-    }
-    catch (error) {
-        console.error('Get users error:', error);
-        res.status(500).json({ message: 'Server error' });
-    }
-});
-router.get('/users/:id', async (req, res) => {
-    try {
-        const { id } = req.params;
-        if (!id) {
-            return res.status(400).json({ message: 'User ID is required' });
-        }
-        const user = {
-            id,
-            name: 'Test User',
-            email: 'test@example.com',
-            phone: '+1234567890',
-            address: '123 Test St',
-            city: 'Test City',
-            state: 'Test State',
-            country: 'Test Country',
-            zipCode: '12345',
-            profileImage: null,
-            role: 'USER',
-            status: 'ACTIVE',
-            createdAt: new Date(),
-            updatedAt: new Date(),
-        };
-        return res.json({
-            success: true,
-            data: { user },
-        });
-    }
-    catch (error) {
-        console.error('Get user error:', error);
-        return res.status(500).json({ message: 'Server error' });
-    }
-});
-router.put('/users/:id/status', async (req, res) => {
-    try {
-        const { id } = req.params;
-        const { status } = req.body;
-        if (!id) {
-            return res.status(400).json({ message: 'User ID is required' });
-        }
-        const user = {
-            id,
-            name: 'Test User',
-            email: 'test@example.com',
-            status,
-        };
-        return res.json({
-            success: true,
-            message: 'User status updated successfully',
-            data: { user },
-        });
-    }
-    catch (error) {
-        console.error('Update user status error:', error);
-        return res.status(500).json({ message: 'Server error' });
-    }
-});
-router.get('/categories', async (_req, res) => {
-    try {
-        const categories = [
-            {
-                id: '1',
-                name: 'Mixing',
-                description: 'Audio mixing services',
-                image: null,
-                status: 'ACTIVE',
-                createdAt: new Date(),
-                updatedAt: new Date(),
-                _count: { services: 5 },
-            },
-            {
-                id: '2',
-                name: 'Mastering',
-                description: 'Audio mastering services',
-                image: null,
-                status: 'ACTIVE',
-                createdAt: new Date(),
-                updatedAt: new Date(),
-                _count: { services: 3 },
-            },
-        ];
-        return res.json({
-            success: true,
-            data: { categories },
-        });
-    }
-    catch (error) {
-        console.error('Get categories error:', error);
-        return res.status(500).json({ message: 'Server error' });
-    }
-});
-router.post('/categories', async (req, res) => {
-    try {
-        const { name, description, image } = req.body;
-        const category = {
-            id: 'new-id',
-            name,
-            description,
-            image,
-            status: 'ACTIVE',
-            createdAt: new Date(),
-            updatedAt: new Date(),
-        };
-        return res.status(201).json({
-            success: true,
-            message: 'Category created successfully',
-            data: { category },
-        });
-    }
-    catch (error) {
-        console.error('Create category error:', error);
-        return res.status(500).json({ message: 'Server error' });
-    }
-});
-router.put('/categories/:id', async (req, res) => {
-    try {
-        const { id } = req.params;
-        const { name, description, image } = req.body;
-        if (!id) {
-            return res.status(400).json({ message: 'Category ID is required' });
-        }
-        const category = {
-            id,
-            name,
-            description,
-            image,
-            status: 'ACTIVE',
-            createdAt: new Date(),
-            updatedAt: new Date(),
-        };
-        return res.json({
-            success: true,
-            message: 'Category updated successfully',
-            data: { category },
-        });
-    }
-    catch (error) {
-        console.error('Update category error:', error);
-        return res.status(500).json({ message: 'Server error' });
-    }
-});
-router.put('/categories/:id/status', async (req, res) => {
-    try {
-        const { id } = req.params;
-        const { status } = req.body;
-        if (!id) {
-            return res.status(400).json({ message: 'Category ID is required' });
-        }
-        const category = {
-            id,
-            name: 'Test Category',
-            description: 'Test description',
-            image: null,
-            status,
-            createdAt: new Date(),
-            updatedAt: new Date(),
-        };
-        return res.json({
-            success: true,
-            message: 'Category status updated successfully',
-            data: { category },
-        });
-    }
-    catch (error) {
-        console.error('Update category status error:', error);
-        return res.status(500).json({ message: 'Server error' });
-    }
-});
-router.get('/services', async (_req, res) => {
-    try {
-        const services = [
-            {
-                id: '1',
-                name: 'Basic Mixing',
-                description: 'Basic audio mixing service',
-                price: 100,
-                duration: '2-3 days',
-                categoryId: '1',
-                status: 'ACTIVE',
-                createdAt: new Date(),
-                updatedAt: new Date(),
-            },
-            {
-                id: '2',
-                name: 'Premium Mastering',
-                description: 'Premium audio mastering service',
-                price: 200,
-                duration: '3-5 days',
-                categoryId: '2',
-                status: 'ACTIVE',
-                createdAt: new Date(),
-                updatedAt: new Date(),
-            },
-        ];
-        return res.json({
-            success: true,
-            data: { services },
-        });
-    }
-    catch (error) {
-        console.error('Get services error:', error);
-        return res.status(500).json({ message: 'Server error' });
-    }
-});
-router.post('/services', async (req, res) => {
-    try {
-        const { name, description, price, duration, categoryId } = req.body;
-        const service = {
-            id: 'new-service-id',
-            name,
-            description,
-            price,
-            duration,
-            categoryId,
-            status: 'ACTIVE',
-            createdAt: new Date(),
-            updatedAt: new Date(),
-        };
-        return res.status(201).json({
-            success: true,
-            message: 'Service created successfully',
-            data: { service },
-        });
-    }
-    catch (error) {
-        console.error('Create service error:', error);
-        return res.status(500).json({ message: 'Server error' });
-    }
-});
-router.put('/services/:id', async (req, res) => {
-    try {
-        const { id } = req.params;
-        const { name, description, price, duration, categoryId } = req.body;
-        if (!id) {
-            return res.status(400).json({ message: 'Service ID is required' });
-        }
-        const service = {
-            id,
-            name,
-            description,
-            price,
-            duration,
-            categoryId,
-            status: 'ACTIVE',
-            createdAt: new Date(),
-            updatedAt: new Date(),
-        };
-        return res.json({
-            success: true,
-            message: 'Service updated successfully',
-            data: { service },
-        });
-    }
-    catch (error) {
-        console.error('Update service error:', error);
-        return res.status(500).json({ message: 'Server error' });
-    }
-});
-router.put('/services/:id/status', async (req, res) => {
-    try {
-        const { id } = req.params;
-        const { status } = req.body;
-        if (!id) {
-            return res.status(400).json({ message: 'Service ID is required' });
-        }
-        const service = {
-            id,
-            name: 'Test Service',
-            description: 'Test service description',
-            price: 100,
-            duration: '2-3 days',
-            categoryId: '1',
-            status,
-            createdAt: new Date(),
-            updatedAt: new Date(),
-        };
-        return res.json({
-            success: true,
-            message: 'Service status updated successfully',
-            data: { service },
-        });
-    }
-    catch (error) {
-        console.error('Update service status error:', error);
-        return res.status(500).json({ message: 'Server error' });
-    }
-});
-router.get('/orders', async (_req, res) => {
-    try {
-        const orders = [
-            {
-                id: '1',
-                userId: '1',
-                totalAmount: 100,
-                status: 'PENDING',
-                createdAt: new Date(),
-                updatedAt: new Date(),
-            },
-            {
-                id: '2',
-                userId: '2',
-                totalAmount: 200,
-                status: 'COMPLETED',
-                createdAt: new Date(),
-                updatedAt: new Date(),
-            },
-        ];
-        return res.json({
-            success: true,
-            data: { orders },
-        });
-    }
-    catch (error) {
-        console.error('Get orders error:', error);
-        return res.status(500).json({ message: 'Server error' });
-    }
-});
-router.get('/orders/:id', async (req, res) => {
-    try {
-        const { id } = req.params;
-        if (!id) {
-            return res.status(400).json({ message: 'Order ID is required' });
-        }
-        const order = {
-            id,
-            userId: '1',
-            totalAmount: 100,
-            status: 'PENDING',
-            createdAt: new Date(),
-            updatedAt: new Date(),
-        };
-        return res.json({
-            success: true,
-            data: { order },
-        });
-    }
-    catch (error) {
-        console.error('Get order error:', error);
-        return res.status(500).json({ message: 'Server error' });
-    }
-});
-router.put('/orders/:id/status', async (req, res) => {
-    try {
-        const { id } = req.params;
-        const { status } = req.body;
-        if (!id) {
-            return res.status(400).json({ message: 'Order ID is required' });
-        }
-        const order = {
-            id,
-            userId: '1',
-            totalAmount: 100,
-            status,
-            createdAt: new Date(),
-            updatedAt: new Date(),
-        };
-        return res.json({
-            success: true,
-            message: 'Order status updated successfully',
-            data: { order },
-        });
-    }
-    catch (error) {
-        console.error('Update order status error:', error);
-        return res.status(500).json({ message: 'Server error' });
-    }
-});
-router.get('/dashboard', async (_req, res) => {
-    try {
-        const stats = {
-            totalUsers: 100,
-            totalOrders: 50,
-            totalRevenue: 5000,
-            pendingOrders: 10,
-            completedOrders: 40,
-        };
-        return res.json({
-            success: true,
-            data: { stats },
-        });
-    }
-    catch (error) {
-        console.error('Get dashboard stats error:', error);
-        return res.status(500).json({ message: 'Server error' });
-    }
-});
+router.get('/sample-audios', AdminSampleAudioController_1.AdminSampleAudioController.index);
+router.post('/sample-audios', upload.fields([
+    { name: 'before_audio', maxCount: 1 },
+    { name: 'after_audio', maxCount: 1 }
+]), AdminSampleAudioController_1.AdminSampleAudioController.store);
+router.get('/sample-audios/:id', AdminSampleAudioController_1.AdminSampleAudioController.show);
+router.post('/sample-audios/:id', upload.fields([
+    { name: 'before_audio', maxCount: 1 },
+    { name: 'after_audio', maxCount: 1 }
+]), AdminSampleAudioController_1.AdminSampleAudioController.update);
+router.delete('/sample-audios/:id', AdminSampleAudioController_1.AdminSampleAudioController.destroy);
+router.put('/sample-audios/:id/status', AdminSampleAudioController_1.AdminSampleAudioController.updateStatus);
+router.get('/gallary', AdminGalleryController_1.AdminGalleryController.index);
+router.post('/gallary', upload.single('image'), AdminGalleryController_1.AdminGalleryController.store);
+router.get('/gallary/:id', AdminGalleryController_1.AdminGalleryController.show);
+router.put('/gallary/:id', AdminGalleryController_1.AdminGalleryController.update);
+router.delete('/gallary/:id', AdminGalleryController_1.AdminGalleryController.destroy);
+router.get('/users', AdminUserController_1.AdminUserController.index);
+router.post('/users', AdminUserController_1.AdminUserController.store);
+router.get('/users/:id', AdminUserController_1.AdminUserController.show);
+router.put('/users/:id', AdminUserController_1.AdminUserController.update);
+router.delete('/users/:id', AdminUserController_1.AdminUserController.destroy);
+router.put('/users/:id/status', AdminUserController_1.AdminUserController.updateStatus);
+router.post('/engineer/store', AdminUserController_1.AdminUserController.storeEngineer);
+router.get('/engineer/list', AdminUserController_1.AdminUserController.listEngineer);
+router.get('/engineer/:id', AdminUserController_1.AdminUserController.showEngineer);
+router.get('/labels', AdminLabelController_1.AdminLabelController.index);
+router.post('/labels', AdminLabelController_1.AdminLabelController.store);
+router.get('/labels/:id', AdminLabelController_1.AdminLabelController.show);
+router.put('/labels/:id', AdminLabelController_1.AdminLabelController.update);
+router.delete('/labels/:id', AdminLabelController_1.AdminLabelController.destroy);
+router.get('/tags', AdminTagController_1.AdminTagController.index);
+router.post('/tags', AdminTagController_1.AdminTagController.store);
+router.get('/tags/:id', AdminTagController_1.AdminTagController.show);
+router.put('/tags/:id', AdminTagController_1.AdminTagController.update);
+router.delete('/tags/:id', AdminTagController_1.AdminTagController.destroy);
+router.get('/categories', AdminCategoryController_1.AdminCategoryController.index);
+router.post('/categories', AdminCategoryController_1.AdminCategoryController.store);
+router.get('/categories/:id', AdminCategoryController_1.AdminCategoryController.show);
+router.put('/categories/:id', AdminCategoryController_1.AdminCategoryController.update);
+router.delete('/categories/:id', AdminCategoryController_1.AdminCategoryController.destroy);
+router.put('/categories/:id/status', AdminCategoryController_1.AdminCategoryController.updateStatus);
+router.get('/services', AdminServiceController_1.AdminServiceController.index);
+router.post('/services', upload.single('image'), AdminServiceController_1.AdminServiceController.store);
+router.get('/services/:id', AdminServiceController_1.AdminServiceController.show);
+router.put('/services/:id', upload.single('image'), AdminServiceController_1.AdminServiceController.update);
+router.delete('/services/:id', AdminServiceController_1.AdminServiceController.destroy);
+router.post('/services/:id/status', AdminServiceController_1.AdminServiceController.updateStatus);
+router.post('/services-update/:id', AdminServiceController_1.AdminServiceController.update);
+router.get('/services-list', AdminServiceController_1.AdminServiceController.serviceList);
+router.get('/coupons', AdminCouponController_1.AdminCouponController.index);
+router.get('/coupons/:id', AdminCouponController_1.AdminCouponController.show);
+router.post('/coupons', AdminCouponController_1.AdminCouponController.store);
+router.put('/coupons/:id', AdminCouponController_1.AdminCouponController.update);
+router.delete('/coupons/:id', AdminCouponController_1.AdminCouponController.destroy);
+router.put('/coupon-update/:id', AdminCouponController_1.AdminCouponController.updateStatus);
+router.get('/gifts', AdminGiftController_1.AdminGiftController.index);
+router.post('/gifts', upload.single('image'), AdminGiftController_1.AdminGiftController.store);
+router.get('/gifts/:id', AdminGiftController_1.AdminGiftController.show);
+router.put('/gifts/:id', upload.single('image'), AdminGiftController_1.AdminGiftController.update);
+router.delete('/gifts/:id', AdminGiftController_1.AdminGiftController.destroy);
+router.put('/gifts/:id/status', AdminGiftController_1.AdminGiftController.updateStatus);
+router.get('/order', AdminOrderController_1.AdminOrderController.index);
+router.get('/order/:id', AdminOrderController_1.AdminOrderController.show);
+router.get('/order-details/:id', PaymentController_1.PaymentController.orderDetails);
+router.put('/order/update-status/:id', AdminOrderController_1.AdminOrderController.updateStatus);
+router.post('/order/upload-file/:id', AdminOrderController_1.AdminOrderController.orderUpdateFile);
+router.delete('/order/:id', AdminOrderController_1.AdminOrderController.destroy);
+router.post('/admin-flag/:id', RevisionController_1.RevisionController.flagAdmin);
 exports.default = router;
 //# sourceMappingURL=admin.js.map

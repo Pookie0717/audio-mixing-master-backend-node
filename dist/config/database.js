@@ -7,9 +7,20 @@ exports.initializeDatabase = void 0;
 const sequelize_1 = require("sequelize");
 const dotenv_1 = __importDefault(require("dotenv"));
 dotenv_1.default.config();
-const sequelize = new sequelize_1.Sequelize(process.env['DATABASE_NAME'] || 'audio_mixing', process.env['DATABASE_USER'] || 'root', process.env['DATABASE_PASSWORD'] || 'a279043a', {
-    host: process.env['DATABASE_HOST'] || 'localhost',
-    port: parseInt(process.env['DATABASE_PORT'] || '3306'),
+const requiredEnvVars = [
+    'DB_DATABASE',
+    'DB_USERNAME',
+    'DB_PASSWORD',
+    'DB_HOST',
+    'DB_PORT'
+];
+const missingEnvVars = requiredEnvVars.filter(varName => !process.env[varName]);
+if (missingEnvVars.length > 0) {
+    throw new Error(`Missing required environment variables: ${missingEnvVars.join(', ')}`);
+}
+const sequelize = new sequelize_1.Sequelize(process.env['DB_DATABASE'], process.env['DB_USERNAME'], process.env['DB_PASSWORD'], {
+    host: process.env['DB_HOST'],
+    port: parseInt(process.env['DB_PORT']),
     dialect: 'mysql',
     logging: process.env['NODE_ENV'] === 'development' ? console.log : false,
     pool: {

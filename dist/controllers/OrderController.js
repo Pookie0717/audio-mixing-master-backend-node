@@ -9,8 +9,9 @@ class OrderController {
             const page = parseInt(req.query['page']) || 1;
             const perPage = parseInt(req.query['per_page']) || 10;
             const offset = (page - 1) * perPage;
+            const whereConditions = { user_id: userId };
             const { count, rows: orders } = await models_1.Order.findAndCountAll({
-                where: { user_id: userId },
+                where: whereConditions,
                 include: [
                     { model: models_1.OrderItem, as: 'orderItems', include: [{ model: models_1.Service, as: 'service' }] },
                 ],
@@ -93,24 +94,6 @@ class OrderController {
         }
         catch (error) {
             console.error('Order updateStatus error:', error);
-            return res.status(500).json({ message: 'Server error' });
-        }
-    }
-    static async uploadFiles(req, res) {
-        try {
-            const { orderId: _orderId } = req.params;
-            const files = req.files;
-            if (!files || files.length === 0) {
-                return res.status(400).json({ message: 'Files are required' });
-            }
-            return res.json({
-                success: true,
-                message: 'Files uploaded successfully',
-                data: { files: files.map(f => f.originalname) },
-            });
-        }
-        catch (error) {
-            console.error('Order upload files error:', error);
             return res.status(500).json({ message: 'Server error' });
         }
     }

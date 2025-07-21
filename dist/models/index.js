@@ -3,7 +3,7 @@ var __importDefault = (this && this.__importDefault) || function (mod) {
     return (mod && mod.__esModule) ? mod : { "default": mod };
 };
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.ContactLeadGeneration = exports.UploadLeadGeneration = exports.FAQ = exports.Gallery = exports.Sample = exports.Label = exports.Favourite = exports.Testimonial = exports.Payment = exports.Cart = exports.OrderItem = exports.Order = exports.Service = exports.Category = exports.User = void 0;
+exports.Revision = exports.OrderCoupon = exports.Coupon = exports.Tag = exports.Gift = exports.ContactLeadGeneration = exports.UploadLeadGeneration = exports.FAQ = exports.Gallery = exports.Sample = exports.Label = exports.Favourite = exports.Testimonial = exports.Payment = exports.Cart = exports.OrderItem = exports.Order = exports.Service = exports.Category = exports.User = void 0;
 const User_1 = __importDefault(require("./User"));
 exports.User = User_1.default;
 const Category_1 = __importDefault(require("./Category"));
@@ -33,6 +33,16 @@ const UploadLeadGeneration_1 = __importDefault(require("./UploadLeadGeneration")
 exports.UploadLeadGeneration = UploadLeadGeneration_1.default;
 const ContactLeadGeneration_1 = __importDefault(require("./ContactLeadGeneration"));
 exports.ContactLeadGeneration = ContactLeadGeneration_1.default;
+const Gift_1 = __importDefault(require("./Gift"));
+exports.Gift = Gift_1.default;
+const Tag_1 = __importDefault(require("./Tag"));
+exports.Tag = Tag_1.default;
+const Coupon_1 = __importDefault(require("./Coupon"));
+exports.Coupon = Coupon_1.default;
+const OrderCoupon_1 = __importDefault(require("./OrderCoupon"));
+exports.OrderCoupon = OrderCoupon_1.default;
+const Revision_1 = __importDefault(require("./Revision"));
+exports.Revision = Revision_1.default;
 exports.default = {
     User: User_1.default,
     Category: Category_1.default,

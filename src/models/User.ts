@@ -1,6 +1,7 @@
 import { DataTypes, Model, Optional } from 'sequelize';
 import sequelize from '../config/database';
 import bcrypt from 'bcryptjs';
+import Revision from './Revision';
 
 interface UserAttributes {
   id: number;
@@ -116,5 +117,9 @@ User.init(
     },
   }
 );
+
+// Define associations
+User.hasMany(Revision, { foreignKey: 'user_id', as: 'revisions' });
+Revision.belongsTo(User, { foreignKey: 'user_id', as: 'user' });
 
 export default User; 

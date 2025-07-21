@@ -10,5 +10,6 @@ export declare class AuthController {
     static removeFavourite(req: any, res: Response): Promise<Response<any, Record<string, any>>>;
     static checkFavourite(req: any, res: Response): Promise<Response<any, Record<string, any>>>;
     static getFavouriteCount(req: any, res: Response): Promise<Response<any, Record<string, any>>>;
+    static adminLogin(req: Request, res: Response): Promise<Response<any, Record<string, any>>>;
 }
 //# sourceMappingURL=AuthController.d.ts.map

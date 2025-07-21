@@ -1,5 +1,5 @@
 import { Response } from 'express';
-import { Payment, Order, User, Service, Cart, OrderItem } from '../models';
+import { Payment, Order, User, Service, Cart, OrderItem, OrderCoupon, Revision } from '../models';
 import { AuthRequest } from '../middleware/auth';
 import { 
   createStripePaymentIntent, 
@@ -70,28 +70,40 @@ export class PaymentController {
   // Stripe payment - matches Laravel implementation (works for both auth and guest)
   static async stripePay(req: AuthRequest | any, res: Response) {
     try {
-      const { cartItem, amount, currency = 'USD', promocode, userId: _userId, order_type, paymentMethodId, customerEmail, customerName } = req.body;
+      const { 
+        cart_items, 
+        amount, 
+        currency = 'USD', 
+        promoCode, 
+        user_id, 
+        order_type = 'one_time', 
+        payment_method_id, 
+        customerEmail, 
+        customerName
+      } = req.body;
 
-      if (!cartItem || !amount) {
+      if (!cart_items || !amount) {
         return res.status(400).json({ message: 'Cart items and amount are required' });
       }
 
       // Handle both authenticated and guest users
       const userEmail = req.user?.email || customerEmail;
       const userName = req.user ? `${req.user.first_name} ${req.user.last_name}` : customerName;
-      const currentUserId = req.user?.id || 'guest';
+      const currentUserId = req.user?.id || user_id || 'guest';
 
-      if (paymentMethodId) {
-        // Handle payment method flow (for guest checkout)
+      if (payment_method_id) {
+        // Handle payment method flow (for authenticated users with payment method)
         try {
           const paymentIntent = await createStripePaymentIntent(parseFloat(amount), currency.toLowerCase());
           
           // Confirm the payment with the payment method
           const stripe = require('stripe')(process.env['STRIPE_SECRET_KEY']);
           const paymentIntentResult = await stripe.paymentIntents.confirm(paymentIntent.id, {
-            payment_method: paymentMethodId,
+            payment_method: payment_method_id,
             return_url: `${process.env['FRONTEND_URL']}/success`,
           });
+
+          console.log(`paymentIntentResult: ${paymentIntentResult}`);
 
           return res.json({
             success: true,
@@ -103,8 +115,8 @@ export class PaymentController {
           return res.status(500).json({ message: 'Payment failed' });
         }
       } else {
-        // Handle checkout session flow (for authenticated users)
-        const lineItems = cartItem.map((item: any) => ({
+        // Handle checkout session flow (for guest users or without payment method)
+        const lineItems = cart_items.map((item: any) => ({
           price_data: {
             product_data: {
               name: item.service_name,
@@ -123,8 +135,8 @@ export class PaymentController {
             user_id: currentUserId,
           },
           customer_email: userEmail,
-          success_url: `${process.env['FRONTEND_URL']}/success?amount=${amount}&currency=${currency}&promocode=${promocode || ''}&cartItem=${encodeURIComponent(JSON.stringify(cartItem))}&user_id=${currentUserId}&transaction_id={CHECKOUT_SESSION_ID}&payer_name=${userName}&payer_email=${userEmail}&order_type=${order_type}`,
-          cancel_url: `${process.env['FRONTEND_URL']}/cancel?amount=${amount}&currency=${currency}&promocode=${promocode || ''}&cartItem=${encodeURIComponent(JSON.stringify(cartItem))}&transaction_id={CHECKOUT_SESSION_ID}`,
+          success_url: `${process.env['FRONTEND_URL']}/success?amount=${amount}&currency=${currency}&promoCode=${promoCode || ''}&cart_items=${encodeURIComponent(JSON.stringify(cart_items))}&user_id=${currentUserId}&transaction_id={CHECKOUT_SESSION_ID}&payer_name=${userName}&payer_email=${userEmail}&order_type=${order_type}`,
+          cancel_url: `${process.env['FRONTEND_URL']}/cancel?amount=${amount}&currency=${currency}&promoCode=${promoCode || ''}&cart_items=${encodeURIComponent(JSON.stringify(cart_items))}&transaction_id={CHECKOUT_SESSION_ID}`,
         });
 
         return res.json({ url: session.url });
@@ -245,25 +257,99 @@ export class PaymentController {
     try {
       const { id } = req.params;
 
-      const order = await Order.findOne({
-        where: { id },
-        include: [
-          { model: User, as: 'user' },
-          { model: Service, as: 'service' },
-        ],
-      });
-
+      // Retrieve the order by id
+      const order = await Order.findByPk(id);
+      
       if (!order) {
-        return res.status(404).json({ message: 'Order not found' });
+        return res.status(200).json({ error: 'No order found' });
       }
-
-      return res.json({
-        success: true,
-        data: { order },
+      
+      // Retrieve the associated order items
+      const orderItems = await OrderItem.findAll({
+        where: { order_id: id }
       });
+      
+      // Handle coupon logic
+      let coupon = null;
+      if (order.promocode) {
+        coupon = await OrderCoupon.findOne({
+          where: { 
+            code: order.promocode,
+            order_id: id 
+          }
+        });
+      }
+      
+      // Get user details
+      const user = await User.findByPk(order.user_id);
+      const username = user ? `${user.first_name} ${user.last_name}` : order.payer_name;
+      const useremail = user?.email || order.payer_email;
+      
+      // Get revisions
+      const revision = await Revision.findAll({ where: { order_id: id } });
+      
+      // Check for gift card services
+      const serviceIds = orderItems.map(item => item.service_id);
+      let is_giftcard = 0;
+      
+      if (serviceIds.length > 0) {
+        const hasGiftcard = await Service.findOne({
+          where: {
+            id: serviceIds,
+            category_id: 15
+          }
+        });
+        is_giftcard = hasGiftcard ? 1 : 0;
+      }
+      
+      const orderDetails = {
+        order: {
+          id: order.id,
+          user_id: order.user_id,
+          transaction_id: order.transaction_id,
+          amount: order.amount,
+          currency: order.currency,
+          promocode: order.promocode,
+          payer_name: order.payer_name,
+          payer_email: order.payer_email,
+          payment_status: order.payment_status,
+          Order_status: order.Order_status,
+          order_type: order.order_type,
+          is_active: order.is_active,
+          payment_method: order.payment_method,
+          order_reference_id: order.order_reference_id,
+          created_at: order.createdAt,
+          updated_at: order.updatedAt
+        },
+        order_items: orderItems.map(item => ({
+          id: item.id,
+          order_id: item.order_id,
+          service_id: item.service_id,
+          paypal_product_id: item.paypal_product_id,
+          paypal_plan_id: item.paypal_plan_id,
+          name: item.name,
+          price: item.price,
+          quantity: item.quantity,
+          total_price: item.total_price,
+          service_type: item.service_type,
+          max_revision: item.max_revision,
+          deliverable_files: item.deliverable_files,
+          admin_is_read: item.admin_is_read,
+          user_is_read: item.user_is_read,
+          created_at: item.createdAt,
+          updated_at: item.updatedAt
+        })),
+        coupon: coupon,
+        user_name: username,
+        user_email: useremail,
+        revision: revision,
+        is_giftcard: is_giftcard
+      };
+
+      return res.status(200).json(orderDetails);
     } catch (error) {
       console.error('Order details error:', error);
-      return res.status(500).json({ message: 'Server error' });
+      return res.status(500).json({ error: error instanceof Error ? error.message : 'Server error' });
     }
   }
 
@@ -277,17 +363,68 @@ export class PaymentController {
       const orders = await Order.findAndCountAll({
         where: { user_id },
         include: [
-          { model: Service, as: 'service' },
+          { 
+            model: OrderItem, 
+            as: 'orderItems',
+            include: [
+              { model: Service, as: 'service' }
+            ]
+          },
         ],
         offset,
         limit: parseInt(limit as string),
         order: [['createdAt', 'DESC']],
       });
 
+      // Transform each order to match the expected structure
+      const transformedOrders = orders.rows.map(order => ({
+        order: {
+          id: order.id,
+          user_id: order.user_id,
+          transaction_id: order.transaction_id,
+          amount: order.amount,
+          currency: order.currency,
+          promocode: order.promocode,
+          payer_name: order.payer_name,
+          payer_email: order.payer_email,
+          payment_status: order.payment_status,
+          Order_status: order.Order_status,
+          order_type: order.order_type,
+          is_active: order.is_active,
+          payment_method: order.payment_method,
+          order_reference_id: order.order_reference_id,
+          created_at: order.createdAt,
+          updated_at: order.updatedAt
+        },
+        order_items: order.orderItems?.map(item => ({
+          id: item.id,
+          order_id: item.order_id,
+          service_id: item.service_id,
+          paypal_product_id: item.paypal_product_id,
+          paypal_plan_id: item.paypal_plan_id,
+          name: item.name,
+          price: item.price,
+          quantity: item.quantity,
+          total_price: item.total_price,
+          service_type: item.service_type,
+          max_revision: item.max_revision,
+          deliverable_files: item.deliverable_files,
+          admin_is_read: item.admin_is_read,
+          user_is_read: item.user_is_read,
+          created_at: item.createdAt,
+          updated_at: item.updatedAt
+        })) || [],
+        coupon: null,
+        user_name: order.payer_name,
+        user_email: order.payer_email,
+        revision: [],
+        is_giftcard: 0
+      }));
+
       return res.json({
         success: true,
         data: {
-          orders: orders.rows,
+          orders: transformedOrders,
           pagination: {
             page: parseInt(page as string),
             limit: parseInt(limit as string),
@@ -313,8 +450,8 @@ export class PaymentController {
         payer_email,
         order_type,
         payment_method,
-        cartItems,
-        promocode,
+        cart_items,
+        promoCode,
         order_id
       } = req.body;
 
@@ -326,13 +463,13 @@ export class PaymentController {
         payer_email,
         order_type,
         payment_method,
-        cartItems: cartItems?.length,
-        promocode,
+        cart_items: cart_items?.length,
+        promoCode,
         order_id
       });
 
       // Validate required fields
-      if (!transaction_id || !amount || !payer_name || !payer_email || !order_type || !payment_method || !cartItems) {
+      if (!transaction_id || !amount || !payer_name || !payer_email || !order_type || !payment_method || !cart_items) {
         return res.status(400).json({ message: 'Missing required fields' });
       }
 
@@ -375,7 +512,7 @@ export class PaymentController {
         transaction_id,
         amount: parseFloat(amount),
         currency: 'USD',
-        promocode: promocode || null,
+        promocode: promoCode || null,
         Order_status: 0,
         is_active: 1,
         payer_name,
@@ -391,7 +528,7 @@ export class PaymentController {
       let totalAmount = 0;
 
       // Process each cart item
-      for (const item of cartItems) {
+      for (const item of cart_items) {
         const service = await Service.findByPk(item.service_id);
         
         if (service && service.category_id === 15) {
@@ -434,8 +571,8 @@ export class PaymentController {
       }
 
       // Handle coupon/promocode logic
-      if (promocode) {
-        if (promocode.startsWith('gift-')) {
+      if (promoCode) {
+        if (promoCode.startsWith('gift-')) {
           // Handle gift card usage
           // const userWallet = await UserWallet.findOne({ where: { promocode } });
           // if (userWallet) {
@@ -446,7 +583,7 @@ export class PaymentController {
           // }
         } else {
           // Handle regular coupon
-          // const coupon = await Coupon.findOne({ where: { code: promocode } });
+          // const coupon = await Coupon.findOne({ where: { code: promoCode } });
           // if (coupon) {
           //   coupon.uses += 1;
           //   await coupon.save();
@@ -456,7 +593,7 @@ export class PaymentController {
 
       // Remove items from cart if payment type is one_time
       if (order_type === 'one_time') {
-        for (const item of cartItems) {
+        for (const item of cart_items) {
           await Cart.destroy({
             where: {
               service_id: item.service_id,

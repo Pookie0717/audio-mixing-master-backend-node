@@ -1,5 +1,5 @@
 import { Request, Response } from 'express';
-import { Service, Category, Label } from '../models';
+import { Service, Category, Label, Tag } from '../models';
 import { Op } from 'sequelize';
 
 export class ServiceController {
@@ -196,12 +196,37 @@ export class ServiceController {
   // Get service by ID
   static async show(req: Request, res: Response) {
     try {
-      const id = req.params['tag'];
+      const tagSlug = req.params['tag'];
       const page = parseInt(req.query['page'] as string) || 1;
       const perPage = parseInt(req.query['per_page'] as string) || 10;
       const offset = (page - 1) * perPage;
 
-      const where = { category_id: id, is_active: 1 };
+      // Convert slug to tag name (replace "-" with " ")
+      const tagName = tagSlug?.replace(/-/g, ' ') || '';
+      
+      // Find the tag by tag_name
+      const tag = await Tag.findOne({
+        where: { 
+          tag_name: tagName,
+          is_active: 1 
+        }
+      });
+
+      if (!tag) {
+        return res.status(404).json({ 
+          message: `Tag not found: ${tagName}`,
+          tag: tagName
+        });
+      }
+
+      // Build where conditions for services
+      let where: any = { 
+        is_active: 1,
+        is_variation: 0 // Only parent services
+      };
+
+      // Filter services by tag_name in the tags field
+      where.tags = { [Op.like]: `%${tag.tag_name}%` };
 
       const { count, rows: services } = await Service.findAndCountAll({
         where,
@@ -218,11 +243,15 @@ export class ServiceController {
         ],
         offset,
         limit: perPage,
-        order: [['createdAt', 'DESC']],
+        order: [['created_at', 'DESC']],
       });
 
       if (!services || services.length === 0) {
-        return res.status(404).json({ message: 'Service not found' });
+        return res.status(404).json({ 
+          message: `No services found for tag: ${tag.tag_name}`,
+          tag: tag.tag_name,
+          tag_slug: tagSlug
+        });
       }
 
       const lastPage = Math.ceil(count / perPage);

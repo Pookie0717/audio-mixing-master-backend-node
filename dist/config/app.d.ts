@@ -1,5 +1,5 @@
 export declare const config: {
-    readonly port: string | 3000;
+    readonly port: number;
     readonly nodeEnv: string;
     readonly jwtSecret: string;
     readonly jwtExpiresIn: string;

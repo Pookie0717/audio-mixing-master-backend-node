@@ -2,6 +2,8 @@ import { DataTypes, Model, Optional } from 'sequelize';
 import sequelize from '../config/database';
 import User from './User';
 import Service from './Service';
+import OrderCoupon from './OrderCoupon';
+import Revision from './Revision';
 
 interface OrderAttributes {
   id: number;
@@ -249,5 +251,13 @@ OrderItem.belongsTo(Order, { foreignKey: 'order_id', as: 'order' });
 
 OrderItem.belongsTo(Service, { foreignKey: 'service_id', as: 'service' });
 Service.hasMany(OrderItem, { foreignKey: 'service_id', as: 'orderItems' });
+
+// OrderCoupon associations
+Order.hasMany(OrderCoupon, { foreignKey: 'order_id', as: 'orderCoupons' });
+OrderCoupon.belongsTo(Order, { foreignKey: 'order_id', as: 'order' });
+
+// Revision associations
+Order.hasMany(Revision, { foreignKey: 'order_id', as: 'revisions' });
+Revision.belongsTo(Order, { foreignKey: 'order_id', as: 'order' });
 
 export { Order, OrderItem }; 
