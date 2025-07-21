@@ -17,7 +17,9 @@ import Tag from './Tag';
 import Coupon from './Coupon';
 import OrderCoupon from './OrderCoupon';
 import Revision from './Revision';
-export { User, Category, Service, Order, OrderItem, Cart, Payment, Testimonial, Favourite, Label, Sample, Gallery, FAQ, UploadLeadGeneration, ContactLeadGeneration, Gift, Tag, Coupon, OrderCoupon, Revision, };
+import { BlogCategory } from './BlogCategory';
+import { Blog } from './Blog';
+export { User, Category, Service, Order, OrderItem, Cart, Payment, Testimonial, Favourite, Label, Sample, Gallery, FAQ, UploadLeadGeneration, ContactLeadGeneration, Gift, Tag, Coupon, OrderCoupon, Revision, BlogCategory, Blog, };
 declare const _default: {
     User: typeof User;
     Category: typeof Category;

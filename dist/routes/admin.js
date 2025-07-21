@@ -16,8 +16,7 @@ const AdminServiceController_1 = require("../controllers/AdminServiceController"
 const AdminCouponController_1 = require("../controllers/AdminCouponController");
 const AdminGiftController_1 = require("../controllers/AdminGiftController");
 const AdminOrderController_1 = require("../controllers/AdminOrderController");
-const RevisionController_1 = require("../controllers/RevisionController");
-const PaymentController_1 = require("../controllers/PaymentController");
+const AdminBlogController_1 = require("../controllers/AdminBlogController");
 const router = (0, express_1.Router)();
 const upload = (0, multer_1.default)({
     storage: multer_1.default.memoryStorage(),
@@ -83,17 +82,24 @@ router.put('/coupons/:id', AdminCouponController_1.AdminCouponController.update)
 router.delete('/coupons/:id', AdminCouponController_1.AdminCouponController.destroy);
 router.put('/coupon-update/:id', AdminCouponController_1.AdminCouponController.updateStatus);
 router.get('/gifts', AdminGiftController_1.AdminGiftController.index);
-router.post('/gifts', upload.single('image'), AdminGiftController_1.AdminGiftController.store);
+router.post('/gifts', AdminGiftController_1.AdminGiftController.store);
 router.get('/gifts/:id', AdminGiftController_1.AdminGiftController.show);
-router.put('/gifts/:id', upload.single('image'), AdminGiftController_1.AdminGiftController.update);
+router.put('/gifts/:id', AdminGiftController_1.AdminGiftController.update);
 router.delete('/gifts/:id', AdminGiftController_1.AdminGiftController.destroy);
-router.put('/gifts/:id/status', AdminGiftController_1.AdminGiftController.updateStatus);
 router.get('/order', AdminOrderController_1.AdminOrderController.index);
 router.get('/order/:id', AdminOrderController_1.AdminOrderController.show);
-router.get('/order-details/:id', PaymentController_1.PaymentController.orderDetails);
-router.put('/order/update-status/:id', AdminOrderController_1.AdminOrderController.updateStatus);
-router.post('/order/upload-file/:id', AdminOrderController_1.AdminOrderController.orderUpdateFile);
+router.put('/order/:id', AdminOrderController_1.AdminOrderController.updateStatus);
 router.delete('/order/:id', AdminOrderController_1.AdminOrderController.destroy);
-router.post('/admin-flag/:id', RevisionController_1.RevisionController.flagAdmin);
+router.post('/order/:id/update-file', AdminOrderController_1.AdminOrderController.orderUpdateFile);
+router.get('/blogs', AdminBlogController_1.AdminBlogController.index);
+router.get('/blogs/:id', AdminBlogController_1.AdminBlogController.show);
+router.post('/blogs', upload.none(), AdminBlogController_1.AdminBlogController.create);
+router.put('/blogs/:id', AdminBlogController_1.AdminBlogController.update);
+router.put('/blogs/:id/status', AdminBlogController_1.AdminBlogController.updateStatus);
+router.delete('/blogs/:id', AdminBlogController_1.AdminBlogController.destroy);
+router.get('/blog-categories', AdminBlogController_1.AdminBlogController.getCategories);
+router.post('/blog-categories', AdminBlogController_1.AdminBlogController.createCategory);
+router.put('/blog-categories/:id', AdminBlogController_1.AdminBlogController.updateCategory);
+router.delete('/blog-categories/:id', AdminBlogController_1.AdminBlogController.destroyCategory);
 exports.default = router;
 //# sourceMappingURL=admin.js.map

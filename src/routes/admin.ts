@@ -11,8 +11,7 @@ import { AdminServiceController } from '../controllers/AdminServiceController';
 import { AdminCouponController } from '../controllers/AdminCouponController';
 import { AdminGiftController } from '../controllers/AdminGiftController';
 import { AdminOrderController } from '../controllers/AdminOrderController';
-import { RevisionController } from '../controllers/RevisionController';
-import { PaymentController } from '../controllers/PaymentController';
+import { AdminBlogController } from '../controllers/AdminBlogController';
 
 const router = Router();
 
@@ -101,21 +100,30 @@ router.put('/coupon-update/:id', AdminCouponController.updateStatus);
 
 // Gifts
 router.get('/gifts', AdminGiftController.index);
-router.post('/gifts', upload.single('image'), AdminGiftController.store);
+router.post('/gifts', AdminGiftController.store);
 router.get('/gifts/:id', AdminGiftController.show);
-router.put('/gifts/:id', upload.single('image'), AdminGiftController.update);
+router.put('/gifts/:id', AdminGiftController.update);
 router.delete('/gifts/:id', AdminGiftController.destroy);
-router.put('/gifts/:id/status', AdminGiftController.updateStatus);
 
 // Orders
 router.get('/order', AdminOrderController.index);
 router.get('/order/:id', AdminOrderController.show);
-router.get('/order-details/:id', PaymentController.orderDetails);
-router.put('/order/update-status/:id', AdminOrderController.updateStatus);
-router.post('/order/upload-file/:id', AdminOrderController.orderUpdateFile);
+router.put('/order/:id', AdminOrderController.updateStatus);
 router.delete('/order/:id', AdminOrderController.destroy);
+router.post('/order/:id/update-file', AdminOrderController.orderUpdateFile);
 
-// Revision
-router.post('/admin-flag/:id', RevisionController.flagAdmin);
+// Blogs
+router.get('/blogs', AdminBlogController.index);
+router.get('/blogs/:id', AdminBlogController.show);
+router.post('/blogs', upload.none(), AdminBlogController.create);
+router.put('/blogs/:id', upload.none(), AdminBlogController.update);
+router.put('/blogs/:id/status', AdminBlogController.updateStatus);
+router.delete('/blogs/:id', AdminBlogController.destroy);
+
+// Blog Categories
+router.get('/blog-categories', AdminBlogController.getCategories);
+router.post('/blog-categories', AdminBlogController.createCategory);
+router.put('/blog-categories/:id', AdminBlogController.updateCategory);
+router.delete('/blog-categories/:id', AdminBlogController.destroyCategory);
 
 export default router; 

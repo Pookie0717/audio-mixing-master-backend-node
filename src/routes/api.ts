@@ -19,6 +19,7 @@ import { LeadGenerationController } from '../controllers/LeadGenerationControlle
 import { ServicesPromoCodeController } from '../controllers/ServicesPromoCodeController';
 import { PayPalController } from '../controllers/PayPalController';
 import { ExcelController } from '../controllers/ExcelController';
+import blogRoutes from './blog';
 
 const router = Router();
 
@@ -110,6 +111,9 @@ router.get('/fetch/order', auth, PaymentController.getOrderDetails);
 router.get('/user-orders/:user_id', auth, PaymentController.userOrders);
 router.post('/success', optionalAuth, PaymentController.success); // Works for both auth and guest users
 router.get('/cancel', optionalAuth, PaymentController.cancel); // Works for both auth and guest users
+
+// BLOG ROUTES
+router.use('/', blogRoutes);
 
 // ADMIN ROUTES
 import adminRouter from './admin';

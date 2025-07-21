@@ -24,6 +24,7 @@ const LeadGenerationController_1 = require("../controllers/LeadGenerationControl
 const ServicesPromoCodeController_1 = require("../controllers/ServicesPromoCodeController");
 const PayPalController_1 = require("../controllers/PayPalController");
 const ExcelController_1 = require("../controllers/ExcelController");
+const blog_1 = __importDefault(require("./blog"));
 const router = (0, express_1.Router)();
 router.post('/auth/register', AuthController_1.AuthController.register);
 router.post('/auth/login', AuthController_1.AuthController.login);
@@ -99,6 +100,7 @@ router.get('/fetch/order', auth_1.auth, PaymentController_1.PaymentController.ge
 router.get('/user-orders/:user_id', auth_1.auth, PaymentController_1.PaymentController.userOrders);
 router.post('/success', auth_1.optionalAuth, PaymentController_1.PaymentController.success);
 router.get('/cancel', auth_1.optionalAuth, PaymentController_1.PaymentController.cancel);
+router.use('/', blog_1.default);
 const admin_1 = __importDefault(require("./admin"));
 router.use('/admin', admin_1.default);
 exports.default = router;

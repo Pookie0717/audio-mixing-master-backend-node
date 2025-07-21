@@ -18,6 +18,8 @@ import Tag from './Tag';
 import Coupon from './Coupon';
 import OrderCoupon from './OrderCoupon';
 import Revision from './Revision';
+import { BlogCategory } from './BlogCategory';
+import { Blog } from './Blog';
 
 // Export all models
 export {
@@ -41,6 +43,8 @@ export {
   Coupon,
   OrderCoupon,
   Revision,
+  BlogCategory,
+  Blog,
 };
 
 // Export default for convenience

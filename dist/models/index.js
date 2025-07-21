@@ -3,7 +3,7 @@ var __importDefault = (this && this.__importDefault) || function (mod) {
     return (mod && mod.__esModule) ? mod : { "default": mod };
 };
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.Revision = exports.OrderCoupon = exports.Coupon = exports.Tag = exports.Gift = exports.ContactLeadGeneration = exports.UploadLeadGeneration = exports.FAQ = exports.Gallery = exports.Sample = exports.Label = exports.Favourite = exports.Testimonial = exports.Payment = exports.Cart = exports.OrderItem = exports.Order = exports.Service = exports.Category = exports.User = void 0;
+exports.Blog = exports.BlogCategory = exports.Revision = exports.OrderCoupon = exports.Coupon = exports.Tag = exports.Gift = exports.ContactLeadGeneration = exports.UploadLeadGeneration = exports.FAQ = exports.Gallery = exports.Sample = exports.Label = exports.Favourite = exports.Testimonial = exports.Payment = exports.Cart = exports.OrderItem = exports.Order = exports.Service = exports.Category = exports.User = void 0;
 const User_1 = __importDefault(require("./User"));
 exports.User = User_1.default;
 const Category_1 = __importDefault(require("./Category"));
@@ -43,6 +43,10 @@ const OrderCoupon_1 = __importDefault(require("./OrderCoupon"));
 exports.OrderCoupon = OrderCoupon_1.default;
 const Revision_1 = __importDefault(require("./Revision"));
 exports.Revision = Revision_1.default;
+const BlogCategory_1 = require("./BlogCategory");
+Object.defineProperty(exports, "BlogCategory", { enumerable: true, get: function () { return BlogCategory_1.BlogCategory; } });
+const Blog_1 = require("./Blog");
+Object.defineProperty(exports, "Blog", { enumerable: true, get: function () { return Blog_1.Blog; } });
 exports.default = {
     User: User_1.default,
     Category: Category_1.default,
