@@ -154,8 +154,30 @@ export class AdminUserController {
       delete (userResponse as any).password;
 
       return res.json(userResponse);
-    } catch (error) {
+    } catch (error: any) {
       console.error('Create user error:', error);
+      
+      // Handle Sequelize unique constraint errors
+      if (error.name === 'SequelizeUniqueConstraintError') {
+        const errorMessages = error.errors?.map((err: any) => err.message) || [];
+        
+        if (errorMessages.some((msg: string) => msg.includes('email'))) {
+          return res.status(400).json({ error: 'User with this email already exists' });
+        }
+        
+        if (errorMessages.some((msg: string) => msg.includes('phone_number'))) {
+          return res.status(400).json({ error: 'User with this phone number already exists' });
+        }
+        
+        return res.status(400).json({ error: 'User already exists with provided information' });
+      }
+      
+      // Handle other validation errors
+      if (error.name === 'SequelizeValidationError') {
+        const errorMessages = error.errors?.map((err: any) => err.message) || [];
+        return res.status(400).json({ error: errorMessages.join(', ') });
+      }
+      
       return res.status(500).json({ error: 'Server error' });
     }
   }
@@ -358,8 +380,30 @@ export class AdminUserController {
       delete (engineerResponse as any).password;
 
       return res.json(engineerResponse);
-    } catch (error) {
+    } catch (error: any) {
       console.error('Create engineer error:', error);
+      
+      // Handle Sequelize unique constraint errors
+      if (error.name === 'SequelizeUniqueConstraintError') {
+        const errorMessages = error.errors?.map((err: any) => err.message) || [];
+        
+        if (errorMessages.some((msg: string) => msg.includes('email'))) {
+          return res.status(400).json({ error: 'Engineer with this email already exists' });
+        }
+        
+        if (errorMessages.some((msg: string) => msg.includes('phone_number'))) {
+          return res.status(400).json({ error: 'Engineer with this phone number already exists' });
+        }
+        
+        return res.status(400).json({ error: 'Engineer already exists with provided information' });
+      }
+      
+      // Handle other validation errors
+      if (error.name === 'SequelizeValidationError') {
+        const errorMessages = error.errors?.map((err: any) => err.message) || [];
+        return res.status(400).json({ error: errorMessages.join(', ') });
+      }
+      
       return res.status(500).json({ error: 'Server error' });
     }
   }

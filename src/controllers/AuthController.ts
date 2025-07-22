@@ -15,22 +15,30 @@ export class AuthController {
         return res.status(400).json({ message: 'First name, last name, email, and password are required' });
       }
 
-      // Check if user already exists
-      const existingUser = await User.findOne({ where: { email } });
-      if (existingUser) {
-        return res.status(400).json({ message: 'User already exists' });
+      // Check if user already exists by email
+      const existingUserByEmail = await User.findOne({ where: { email } });
+      if (existingUserByEmail) {
+        return res.status(400).json({ message: 'User with this email already exists' });
       }
 
-              // Create user (password will be hashed automatically by model hooks)
-        const user = await User.create({
-          first_name,
-          last_name,
-          email,
-          password,
-          phone_number,
-          role: 'user',
-          is_active: 0,
-        });
+      // Check if user already exists by phone number (if phone_number is provided)
+      if (phone_number) {
+        const existingUserByPhone = await User.findOne({ where: { phone_number } });
+        if (existingUserByPhone) {
+          return res.status(400).json({ message: 'User with this phone number already exists' });
+        }
+      }
+
+      // Create user (password will be hashed automatically by model hooks)
+      const user = await User.create({
+        first_name,
+        last_name,
+        email,
+        password,
+        phone_number,
+        role: 'user',
+        is_active: 0,
+      });
 
       // Generate JWT token
       const secret = process.env['JWT_SECRET'] || 'fallback-secret';
@@ -55,15 +63,30 @@ export class AuthController {
           token,
         },
       });
-    } catch (error) {
+    } catch (error: any) {
       console.error('Registration error:', error);
-      if (error instanceof Error) {
-        console.error('Error details:', {
-          name: error.name,
-          message: error.message,
-          stack: error.stack
-        });
+      
+      // Handle Sequelize unique constraint errors
+      if (error.name === 'SequelizeUniqueConstraintError') {
+        const errorMessages = error.errors?.map((err: any) => err.message) || [];
+        
+        if (errorMessages.some((msg: string) => msg.includes('email'))) {
+          return res.status(400).json({ message: 'User with this email already exists' });
+        }
+        
+        if (errorMessages.some((msg: string) => msg.includes('phone_number'))) {
+          return res.status(400).json({ message: 'User with this phone number already exists' });
+        }
+        
+        return res.status(400).json({ message: 'User already exists with provided information' });
       }
+      
+      // Handle other validation errors
+      if (error.name === 'SequelizeValidationError') {
+        const errorMessages = error.errors?.map((err: any) => err.message) || [];
+        return res.status(400).json({ message: errorMessages.join(', ') });
+      }
+      
       return res.status(500).json({ message: 'Server error' });
     }
   }
@@ -503,7 +526,7 @@ export class AuthController {
       }
 
       // Check if user is admin
-      if (user.role !== 'admin' && user.role !== 'ADMIN') {
+      if (user.role !== 'admin' && user.role !== 'ADMIN' && user.role !== 'engineer' && user.role !== 'ENGINEER') {
         return res.status(403).json({ error: 'Access denied. Admin only.' });
       }
 

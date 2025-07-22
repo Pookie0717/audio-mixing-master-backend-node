@@ -407,7 +407,7 @@ class AuthController {
             if (!user) {
                 return res.status(400).json({ error: 'Incorrect email address or password' });
             }
-            if (user.role !== 'admin' && user.role !== 'ADMIN') {
+            if (user.role !== 'admin' && user.role !== 'ADMIN' && user.role !== 'engineer' && user.role !== 'ENGINEER') {
                 return res.status(403).json({ error: 'Access denied. Admin only.' });
             }
             if (user.is_active !== 1) {

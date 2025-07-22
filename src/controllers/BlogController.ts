@@ -42,11 +42,12 @@ export class BlogController {
       const perPage = parseInt(req.query['per_page'] as string) || 10;
       const search = req.query['search'] as string;
       const categoryId = req.query['category_id'] as string;
-      const isPublished = req.query['is_published'] as string;
       const offset = (page - 1) * perPage;
 
       // Build where conditions
-      const whereConditions: any = {};
+      const whereConditions: any = {
+        is_published: 1
+      };
 
       // Add search functionality
       if (search && search.trim()) {
@@ -60,11 +61,6 @@ export class BlogController {
       // Add category filter
       if (categoryId) {
         whereConditions.category_id = parseInt(categoryId);
-      }
-
-      // Add published filter
-      if (isPublished !== undefined) {
-        whereConditions.is_published = isPublished === 'true' ? 1 : 0;
       }
 
       const { count, rows: blogs } = await Blog.findAndCountAll({

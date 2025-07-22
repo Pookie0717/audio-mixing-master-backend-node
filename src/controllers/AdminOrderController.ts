@@ -1,12 +1,13 @@
-import { Request, Response } from 'express';
+import { Response } from 'express';
 import { Order, OrderItem, Service, User } from '../models';
 import { AuthRequest } from '../middleware/auth';
 import { sendOrderStatusEmail } from '../services/EmailService';
 import { Op } from 'sequelize';
+import { OrderCoupon, Revision } from '../models'; // Added missing imports
 
 export class AdminOrderController {
   // Get all orders (admin view)
-  static async index(req: Request, res: Response) {
+  static async index(req: AuthRequest, res: Response) {
     try {
       const perPage = parseInt(req.query['per_page'] as string) || 10;
       const page = parseInt(req.query['page'] as string) || 1;
@@ -16,6 +17,16 @@ export class AdminOrderController {
 
       // Build where conditions
       const whereConditions: any = {};
+
+      // Add role-based filtering
+      if (req.user) {
+        const userRole = req.user.role?.toUpperCase();
+        if (userRole === 'ENGINEER') {
+          // Engineers can only see their own orders
+          whereConditions.user_id = req.user.id;
+        }
+        // Admins can see all orders, so no additional condition needed
+      }
 
       // Add search functionality
       if (search && search.trim()) {
@@ -175,7 +186,7 @@ export class AdminOrderController {
   }
 
   // Get order by ID (admin view)
-  static async show(req: Request, res: Response) {
+  static async show(req: AuthRequest, res: Response) {
     try {
       const { id } = req.params;
 
@@ -205,53 +216,66 @@ export class AdminOrderController {
         return res.status(404).json({ error: 'Order not found' });
       }
 
-      // Transform order data
-      const transformedOrder = {
-        id: order.id,
-        user_id: order.user_id,
-        transaction_id: order.transaction_id,
-        amount: order.amount,
-        currency: order.currency,
-        promocode: order.promocode,
-        payer_name: order.payer_name,
-        payer_email: order.payer_email,
-        payment_status: order.payment_status,
-        Order_status: order.Order_status,
-        order_type: order.order_type,
-        is_active: order.is_active,
-        payment_method: order.payment_method,
-        order_reference_id: order.order_reference_id,
-        created_at: order.createdAt,
-        updated_at: order.updatedAt,
-        user: order.user ? {
-          id: order.user.id,
-          first_name: order.user.first_name,
-          last_name: order.user.last_name,
-          email: order.user.email
-        } : null,
+      // Role-based access control
+      if (req.user) {
+        const userRole = req.user.role?.toUpperCase();
+        if (userRole === 'ENGINEER' && order.user_id !== req.user.id) {
+          return res.status(403).json({ error: 'Access denied. You can only view your own orders.' });
+        }
+      }
+
+      // Fetch related data separately
+      const [orderCoupons, revisions] = await Promise.all([
+        OrderCoupon.findAll({ where: { order_id: id } }),
+        Revision.findAll({ where: { order_id: id } })
+      ]);
+
+      // Transform order data to match the desired structure
+      const transformedResponse = {
+        order: {
+          id: order.id,
+          user_id: order.user_id,
+          transaction_id: order.transaction_id,
+          amount: order.amount,
+          currency: order.currency,
+          promocode: order.promocode,
+          payer_name: order.payer_name,
+          payer_email: order.payer_email,
+          payment_status: order.payment_status,
+          Order_status: order.Order_status,
+          order_type: order.order_type,
+          is_active: order.is_active,
+          payment_method: order.payment_method,
+          order_reference_id: order.order_reference_id,
+          created_at: order.createdAt,
+          updated_at: order.updatedAt,
+        },
         order_items: order.orderItems ? order.orderItems.map(item => ({
           id: item.id,
           order_id: item.order_id,
           service_id: item.service_id,
+          paypal_product_id: item.paypal_product_id,
+          paypal_plan_id: item.paypal_plan_id,
           name: item.name,
           price: item.price,
           quantity: item.quantity,
-          max_revision: item.max_revision,
           total_price: item.total_price,
           service_type: item.service_type,
-          paypal_product_id: item.paypal_product_id,
-          paypal_plan_id: item.paypal_plan_id,
+          max_revision: item.max_revision,
+          deliverable_files: item.deliverable_files,
           admin_is_read: item.admin_is_read,
           user_is_read: item.user_is_read,
-          service: item.service ? {
-            id: item.service.id,
-            name: item.service.name,
-            price: item.service.price
-          } : null
-        })) : []
+          created_at: item.createdAt,
+          updated_at: item.updatedAt,
+        })) : [],
+        coupon: orderCoupons.length > 0 ? orderCoupons[0] : null,
+        user_name: order.user ? `${order.user.first_name} ${order.user.last_name}` : '',
+        user_email: order.user ? order.user.email : '',
+        revision: revisions,
+        is_giftcard: 0, // Default value since it's not a field in the Order model
       };
 
-      return res.json(transformedOrder);
+      return res.json(transformedResponse);
     } catch (error) {
       console.error('Admin get order error:', error);
       return res.status(500).json({ error: 'Server error' });
@@ -394,7 +418,7 @@ export class AdminOrderController {
   }
 
   // Update order status (admin)
-  static async updateStatus(req: Request, res: Response) {
+  static async updateStatus(req: AuthRequest, res: Response) {
     try {
       const { id } = req.params;
       const { order_status } = req.body;
@@ -411,6 +435,14 @@ export class AdminOrderController {
         return res.status(404).json({ error: 'Order not found' });
       }
 
+      // Role-based access control
+      if (req.user) {
+        const userRole = req.user.role?.toUpperCase();
+        if (userRole === 'ENGINEER' && order.user_id !== req.user.id) {
+          return res.status(403).json({ error: 'Access denied. You can only modify your own orders.' });
+        }
+      }
+
       // Update order status
       order.Order_status = order_status;
       await order.save();
@@ -423,7 +455,7 @@ export class AdminOrderController {
   }
 
   // Delete order (admin)
-  static async destroy(req: Request, res: Response) {
+  static async destroy(req: AuthRequest, res: Response) {
     try {
       const { id } = req.params;
 
@@ -431,6 +463,14 @@ export class AdminOrderController {
 
       if (!order) {
         return res.status(404).json({ error: 'Order not found' });
+      }
+
+      // Role-based access control
+      if (req.user) {
+        const userRole = req.user.role?.toUpperCase();
+        if (userRole === 'ENGINEER' && order.user_id !== req.user.id) {
+          return res.status(403).json({ error: 'Access denied. You can only delete your own orders.' });
+        }
       }
 
       await order.destroy();

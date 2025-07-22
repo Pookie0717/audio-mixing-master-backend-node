@@ -484,14 +484,29 @@ export class PaymentController {
         console.log('Creating guest user:', { firstName, lastName, email: payer_email });
         user = await User.findOne({ where: { email: payer_email } });
         if (!user) {
-          user = await User.create({
-            first_name: firstName,
-            last_name: lastName,
-            email: payer_email,
-            password: `guest_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`, // Temporary password
-            role: 'guest',
-            is_active: 1
-          });
+          try {
+            user = await User.create({
+              first_name: firstName,
+              last_name: lastName,
+              email: payer_email,
+              password: `guest_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`, // Temporary password
+              role: 'guest',
+              is_active: 1
+            });
+          } catch (error: any) {
+            console.error('Error creating guest user:', error);
+            
+            // Handle unique constraint errors
+            if (error.name === 'SequelizeUniqueConstraintError') {
+              // If user creation fails due to unique constraint, try to find the existing user
+              user = await User.findOne({ where: { email: payer_email } });
+              if (!user) {
+                return res.status(400).json({ message: 'User with this email already exists' });
+              }
+            } else {
+              return res.status(500).json({ message: 'Failed to create user account' });
+            }
+          }
         }
         
         console.log('Guest user created with ID:', user.id);

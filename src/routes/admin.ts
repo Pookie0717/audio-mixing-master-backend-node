@@ -107,10 +107,10 @@ router.delete('/gifts/:id', AdminGiftController.destroy);
 
 // Orders
 router.get('/order', AdminOrderController.index);
-router.get('/order/:id', AdminOrderController.show);
-router.put('/order/:id', AdminOrderController.updateStatus);
+router.get('/order-details/:id', AdminOrderController.show);
+router.put('/order/update-status/:id', AdminOrderController.updateStatus);
 router.delete('/order/:id', AdminOrderController.destroy);
-router.post('/order/:id/update-file', AdminOrderController.orderUpdateFile);
+router.post('/order/upload-file/:id', AdminOrderController.orderUpdateFile);
 
 // Blogs
 router.get('/blogs', AdminBlogController.index);

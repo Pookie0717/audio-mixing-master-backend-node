@@ -81,7 +81,7 @@ const adminAuth = async (req, res, next) => {
         if (user.is_active !== 1) {
             return res.status(401).json({ message: 'Account is not active' });
         }
-        if (user.role !== 'admin' && user.role !== 'ADMIN') {
+        if (user.role !== 'admin' && user.role !== 'ADMIN' && user.role !== 'engineer' && user.role !== 'ENGINEER') {
             return res.status(403).json({ message: 'Access denied. Admin only.' });
         }
         req.user = user;

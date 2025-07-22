@@ -3,6 +3,16 @@ import nodemailer from 'nodemailer';
 let transporter: nodemailer.Transporter | null = null;
 let emailServiceAvailable = false;
 
+export const getEmailServiceStatus = () => {
+  return {
+    available: emailServiceAvailable,
+    configured: !!(process.env['SMTP_HOST'] && process.env['SMTP_USER'] && process.env['SMTP_PASS']),
+    smtpHost: process.env['SMTP_HOST'] || 'Not configured',
+    smtpUser: process.env['SMTP_USER'] || 'Not configured',
+    smtpPort: process.env['SMTP_PORT'] || '587',
+  };
+};
+
 export const initializeEmailService = async () => {
   try {
     // Check if SMTP configuration is provided
@@ -10,12 +20,21 @@ export const initializeEmailService = async () => {
     const smtpUser = process.env['SMTP_USER'];
     const smtpPass = process.env['SMTP_PASS'];
 
+    console.log('🔧 Initializing email service...');
+    console.log('📧 SMTP Configuration:', {
+      host: smtpHost || 'Not set',
+      user: smtpUser || 'Not set',
+      port: process.env['SMTP_PORT'] || '587',
+      configured: !!(smtpHost && smtpUser && smtpPass)
+    });
+
     if (!smtpHost || !smtpUser || !smtpPass) {
       console.log('⚠️  SMTP configuration not provided, email service will be disabled');
       emailServiceAvailable = false;
       return;
     }
 
+    console.log('🔄 Creating SMTP transporter...');
     transporter = nodemailer.createTransport({
       host: smtpHost,
       port: parseInt(process.env['SMTP_PORT'] || '587'),
@@ -24,10 +43,20 @@ export const initializeEmailService = async () => {
         user: smtpUser,
         pass: smtpPass,
       },
+      // Add connection timeout settings
+      connectionTimeout: 10000, // 10 seconds
+      greetingTimeout: 10000, // 10 seconds
+      socketTimeout: 10000, // 10 seconds
     });
 
-    // Verify connection configuration
-    await transporter.verify();
+    console.log('🔍 Verifying SMTP connection...');
+    // Verify connection configuration with timeout
+    const verifyPromise = transporter.verify();
+    const timeoutPromise = new Promise((_, reject) => {
+      setTimeout(() => reject(new Error('Connection timeout')), 15000); // 15 second timeout
+    });
+
+    await Promise.race([verifyPromise, timeoutPromise]);
     emailServiceAvailable = true;
     console.log('✅ Email service initialized successfully');
   } catch (error) {
@@ -57,20 +86,35 @@ export const sendEmail = async (options: {
     }
 
     const mailOptions = {
-      from: process.env['MAIL_FROM'],
+      from: process.env['MAIL_FROM'] || process.env['SMTP_USER'],
       to: options.to,
       subject: options.subject,
       html: options.html,
       text: options.text,
     };
 
-    const info = await transporter.sendMail(mailOptions);
+    // Add timeout to email sending
+    const sendPromise = transporter.sendMail(mailOptions);
+    const timeoutPromise = new Promise((_, reject) => {
+      setTimeout(() => reject(new Error('Email sending timeout')), 30000); // 30 second timeout
+    });
+
+    const info = await Promise.race([sendPromise, timeoutPromise]);
     console.log('✅ Email sent successfully:', info.messageId);
     return info;
   } catch (error) {
     console.error('❌ Email sending failed:', error);
-    // Don't throw error, just log it
-    return { error: 'Email sending failed' };
+    
+    // Log the email content to console as fallback
+    console.log('📧 Email content (sending failed):', {
+      to: options.to,
+      subject: options.subject,
+      html: options.html,
+      text: options.text,
+    });
+    
+    // Don't throw error, just log it and return a fallback response
+    return { error: 'Email sending failed', messageId: 'failed' };
   }
 };
 

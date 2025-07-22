@@ -14,8 +14,6 @@ export class OrderController {
       // Build where conditions
       const whereConditions: any = { user_id: userId };
 
-      
-
       const { count, rows: orders } = await Order.findAndCountAll({
         where: whereConditions,
         include: [
