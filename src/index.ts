@@ -49,7 +49,8 @@ const allowedOrigins = process.env['ALLOWED_ORIGINS']?.split(',') || [
   'http://localhost:5174',
   'http://127.0.0.1:5174',
   'https://audio-mixing-master-test.vercel.app',
-  'https://audio-mixing-master.vercel.app'
+  'https://audio-mixing-master.vercel.app',
+  'https://audio-mixing-master-admin.vercel.app',
 ];
 
 app.use(cors({
