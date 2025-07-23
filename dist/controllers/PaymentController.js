@@ -37,13 +37,20 @@ class PaymentController {
     }
     static async createPaymentIntent(req, res) {
         try {
-            const { amount, user_id: _user_id, cart_items } = req.body;
-            if (!amount || !cart_items) {
+            const { amount, user_id: _user_id, cartItems, finalTotal, currency = 'usd' } = req.body;
+            if (!amount || !cartItems) {
                 return res.status(400).json({ message: 'Amount and cart items are required' });
             }
-            const paymentIntent = await (0, PaymentService_1.createStripePaymentIntent)(parseFloat(amount), 'usd');
+            const paymentAmount = finalTotal || amount;
+            const amountInCents = typeof paymentAmount === 'number' && paymentAmount > 100 ?
+                paymentAmount :
+                Math.round(paymentAmount * 100);
+            const paymentIntent = await (0, PaymentService_1.createStripePaymentIntent)(amountInCents / 100, currency.toLowerCase());
             return res.json({
-                clientSecret: paymentIntent.client_secret
+                clientSecret: paymentIntent.client_secret,
+                paymentIntentId: paymentIntent.id,
+                amount: amountInCents,
+                currency: currency.toLowerCase()
             });
         }
         catch (error) {
@@ -54,22 +61,27 @@ class PaymentController {
     }
     static async stripePay(req, res) {
         try {
-            const { cart_items, amount, currency = 'USD', promoCode, user_id, order_type = 'one_time', payment_method_id, customerEmail, customerName } = req.body;
-            if (!cart_items || !amount) {
+            const { cart_items, amount, currency = 'USD', promoCode, user_id, order_type = 'one_time', payment_method_id, customerEmail, customerName, finalTotal, isGuestCheckout, guest_info } = req.body;
+            const cartItemsToUse = cart_items || cart_items;
+            if (!cartItemsToUse || !amount) {
                 return res.status(400).json({ message: 'Cart items and amount are required' });
             }
-            const userEmail = req.user?.email || customerEmail;
-            const userName = req.user ? `${req.user.first_name} ${req.user.last_name}` : customerName;
+            const userEmail = req.user?.email || customerEmail || (guest_info?.email);
+            const userName = req.user ? `${req.user.first_name} ${req.user.last_name}` : customerName || `${guest_info?.first_name} ${guest_info?.last_name}`;
             const currentUserId = req.user?.id || user_id || 'guest';
+            const paymentAmount = finalTotal || amount;
+            const amountInCents = typeof paymentAmount === 'number' && paymentAmount > 100 ?
+                paymentAmount :
+                Math.round(paymentAmount * 100);
             if (payment_method_id) {
                 try {
-                    const paymentIntent = await (0, PaymentService_1.createStripePaymentIntent)(parseFloat(amount), currency.toLowerCase());
+                    const paymentIntent = await (0, PaymentService_1.createStripePaymentIntent)(amountInCents / 100, currency.toLowerCase());
                     const stripe = require('stripe')(process.env['STRIPE_SECRET_KEY']);
                     const paymentIntentResult = await stripe.paymentIntents.confirm(paymentIntent.id, {
                         payment_method: payment_method_id,
                         return_url: `${process.env['FRONTEND_URL']}/success`,
                     });
-                    console.log(`paymentIntentResult: ${paymentIntentResult}`);
+                    console.log(`paymentIntentResult: ${JSON.stringify(paymentIntentResult)}`);
                     return res.json({
                         success: true,
                         paymentIntent: paymentIntentResult,
@@ -82,26 +94,35 @@ class PaymentController {
                 }
             }
             else {
-                const lineItems = cart_items.map((item) => ({
+                const lineItems = cartItemsToUse.map((item) => ({
                     price_data: {
                         product_data: {
                             name: item.service_name,
                         },
-                        currency: 'USD',
-                        unit_amount: item.price,
+                        currency: currency.toUpperCase(),
+                        unit_amount: typeof item.price === 'number' && item.price > 100 ?
+                            item.price :
+                            Math.round(item.price * 100),
                     },
                     quantity: item.qty,
                 }));
+                const metadata = {
+                    user_id: currentUserId,
+                };
+                if (isGuestCheckout && guest_info) {
+                    metadata.guest_first_name = guest_info.first_name;
+                    metadata.guest_last_name = guest_info.last_name;
+                    metadata.guest_email = guest_info.email;
+                    metadata.guest_phone = guest_info.phone;
+                }
                 const session = await (0, PaymentService_1.createStripeCheckoutSession)({
                     line_items: lineItems,
                     mode: 'payment',
                     allow_promotion_codes: false,
-                    metadata: {
-                        user_id: currentUserId,
-                    },
+                    metadata: metadata,
                     customer_email: userEmail,
-                    success_url: `${process.env['FRONTEND_URL']}/success?amount=${amount}&currency=${currency}&promoCode=${promoCode || ''}&cart_items=${encodeURIComponent(JSON.stringify(cart_items))}&user_id=${currentUserId}&transaction_id={CHECKOUT_SESSION_ID}&payer_name=${userName}&payer_email=${userEmail}&order_type=${order_type}`,
-                    cancel_url: `${process.env['FRONTEND_URL']}/cancel?amount=${amount}&currency=${currency}&promoCode=${promoCode || ''}&cart_items=${encodeURIComponent(JSON.stringify(cart_items))}&transaction_id={CHECKOUT_SESSION_ID}`,
+                    success_url: `${process.env['FRONTEND_URL']}/success?amount=${paymentAmount}&currency=${currency}&promoCode=${promoCode || ''}&cartItems=${encodeURIComponent(JSON.stringify(cartItemsToUse))}&user_id=${currentUserId}&transaction_id={CHECKOUT_SESSION_ID}&payer_name=${userName}&payer_email=${userEmail}&order_type=${order_type}&isGuestCheckout=${isGuestCheckout || false}&guest_info=${encodeURIComponent(JSON.stringify(guest_info || {}))}`,
+                    cancel_url: `${process.env['FRONTEND_URL']}/cancel?amount=${paymentAmount}&currency=${currency}&promoCode=${promoCode || ''}&cartItems=${encodeURIComponent(JSON.stringify(cartItemsToUse))}&transaction_id={CHECKOUT_SESSION_ID}&isGuestCheckout=${isGuestCheckout || false}`,
                 });
                 return res.json({ url: session.url });
             }
@@ -364,7 +385,7 @@ class PaymentController {
     }
     static async success(req, res) {
         try {
-            const { user_id, transaction_id, amount, payer_name, payer_email, order_type, payment_method, cart_items, promoCode, order_id } = req.body;
+            const { user_id, transaction_id, amount, payer_name, payer_email, order_type, payment_method, cartItems, promoCode, order_id, isGuestCheckout, guest_info } = req.body;
             console.log('Payment success request body:', {
                 user_id,
                 transaction_id,
@@ -373,28 +394,51 @@ class PaymentController {
                 payer_email,
                 order_type,
                 payment_method,
-                cart_items: cart_items?.length,
+                cartItems: cartItems?.length,
                 promoCode,
                 order_id
             });
-            if (!transaction_id || !amount || !payer_name || !payer_email || !order_type || !payment_method || !cart_items) {
+            if (!transaction_id || !amount || !payer_name || !payer_email || !order_type || !payment_method || !cartItems) {
                 return res.status(400).json({ message: 'Missing required fields' });
             }
             let user;
-            if (!user_id || user_id === 'guest') {
-                const [firstName, ...lastNameParts] = payer_name.split(' ');
-                const lastName = lastNameParts.join(' ') || 'Guest';
+            if (!user_id || user_id === 'guest' || isGuestCheckout) {
+                let firstName, lastName;
+                if (guest_info && guest_info.first_name && guest_info.last_name) {
+                    firstName = guest_info.first_name;
+                    lastName = guest_info.last_name;
+                }
+                else {
+                    const [firstNamePart, ...lastNameParts] = payer_name.split(' ');
+                    firstName = firstNamePart;
+                    lastName = lastNameParts.join(' ') || 'Guest';
+                }
                 console.log('Creating guest user:', { firstName, lastName, email: payer_email });
                 user = await models_1.User.findOne({ where: { email: payer_email } });
                 if (!user) {
-                    user = await models_1.User.create({
-                        first_name: firstName,
-                        last_name: lastName,
-                        email: payer_email,
-                        password: `guest_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`,
-                        role: 'guest',
-                        is_active: 1
-                    });
+                    try {
+                        user = await models_1.User.create({
+                            first_name: firstName,
+                            last_name: lastName,
+                            email: payer_email,
+                            phone_number: guest_info?.phone || null,
+                            password: `guest_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`,
+                            role: 'guest',
+                            is_active: 1
+                        });
+                    }
+                    catch (error) {
+                        console.error('Error creating guest user:', error);
+                        if (error.name === 'SequelizeUniqueConstraintError') {
+                            user = await models_1.User.findOne({ where: { email: payer_email } });
+                            if (!user) {
+                                return res.status(400).json({ message: 'User with this email already exists' });
+                            }
+                        }
+                        else {
+                            return res.status(500).json({ message: 'Failed to create user account' });
+                        }
+                    }
                 }
                 console.log('Guest user created with ID:', user.id);
             }
@@ -423,7 +467,7 @@ class PaymentController {
             });
             console.log('Order created with ID:', order.id);
             let totalAmount = 0;
-            for (const item of cart_items) {
+            for (const item of cartItems) {
                 const service = await models_1.Service.findByPk(item.service_id);
                 if (service && service.category_id === 15) {
                     const giftCode = `gift-${(0, uuid_1.v4)().toUpperCase().replace(/-/g, '')}`;
@@ -457,7 +501,7 @@ class PaymentController {
                 }
             }
             if (order_type === 'one_time') {
-                for (const item of cart_items) {
+                for (const item of cartItems) {
                     await models_1.Cart.destroy({
                         where: {
                             service_id: item.service_id,
@@ -469,9 +513,9 @@ class PaymentController {
             const orderItems = await models_1.OrderItem.findAll({
                 where: { order_id: order.id }
             });
-            const userUrl = process.env['FRONTEND_URL'] || 'http://localhost:3000';
-            const adminUrl = process.env['ADMIN_URL'] || 'http://localhost:3001';
-            await (0, EmailService_1.sendOrderSuccessEmail)({
+            const userUrl = process.env['FRONTEND_URL'];
+            const adminUrl = process.env['ADMIN_URL'];
+            (0, EmailService_1.sendOrderSuccessEmail)({
                 name: `${user.first_name} ${user.last_name}`,
                 order_id: order.id,
                 message: 'Thank you for your purchase. Your order has been processed successfully. Your order details are as follows',
@@ -481,7 +525,7 @@ class PaymentController {
             });
             const admin = await models_1.User.findOne({ where: { role: 'admin' } });
             if (admin) {
-                await (0, EmailService_1.sendOrderSuccessEmail)({
+                (0, EmailService_1.sendOrderSuccessEmail)({
                     name: `${admin.first_name} ${admin.last_name}`,
                     order_id: order.id,
                     items: orderItems,
@@ -492,7 +536,7 @@ class PaymentController {
             }
             const engineers = await models_1.User.findAll({ where: { role: 'engineer' } });
             for (const engineer of engineers) {
-                await (0, EmailService_1.sendOrderSuccessEmail)({
+                (0, EmailService_1.sendOrderSuccessEmail)({
                     name: `${engineer.first_name} ${engineer.last_name}`,
                     order_id: order.id,
                     items: orderItems,

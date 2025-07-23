@@ -18,8 +18,7 @@
     "format:check": "prettier --check src/**/*.ts",
     "type-check": "tsc --noEmit",
     "prepare": "husky install",
-    "setup-blog": "node src/scripts/setup-blog-system.js",
-    "add-is-active-columns": "node add-is-active-columns.js"
+    "setup-blog": "node src/scripts/setup-blog-system.js"
   },
   "keywords": [
     "audio",

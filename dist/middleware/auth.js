@@ -12,7 +12,21 @@ const auth = async (req, res, next) => {
         if (!token) {
             return res.status(401).json({ message: 'No token, authorization denied' });
         }
-        const decoded = jsonwebtoken_1.default.verify(token, process.env['JWT_SECRET'] || 'fallback-secret');
+        let jwtToken;
+        if (token.includes('|')) {
+            const parts = token.split('|');
+            if (parts.length < 2 || !parts[1]) {
+                return res.status(401).json({ message: 'Token is not valid' });
+            }
+            jwtToken = parts[1];
+        }
+        else {
+            jwtToken = token;
+        }
+        if (!jwtToken) {
+            return res.status(401).json({ message: 'Token is not valid' });
+        }
+        const decoded = jsonwebtoken_1.default.verify(jwtToken, 'fallback-secret');
         const user = await User_1.default.findByPk(decoded.id, {
             attributes: ['id', 'first_name', 'last_name', 'email', 'role', 'is_active'],
         });
@@ -37,7 +51,19 @@ const optionalAuth = async (req, _res, next) => {
             req.user = null;
             return next();
         }
-        const decoded = jsonwebtoken_1.default.verify(token, process.env['JWT_SECRET'] || 'fallback-secret');
+        let jwtToken;
+        if (token.includes('|')) {
+            const parts = token.split('|');
+            if (parts.length < 2 || !parts[1]) {
+                req.user = null;
+                return next();
+            }
+            jwtToken = parts[1];
+        }
+        else {
+            jwtToken = token;
+        }
+        const decoded = jsonwebtoken_1.default.verify(jwtToken, 'fallback-secret');
         const user = await User_1.default.findByPk(decoded.id, {
             attributes: ['id', 'first_name', 'last_name', 'email', 'role', 'is_active'],
         });
@@ -71,7 +97,7 @@ const adminAuth = async (req, res, next) => {
         if (!jwtToken) {
             return res.status(401).json({ message: 'Token is not valid' });
         }
-        const decoded = jsonwebtoken_1.default.verify(jwtToken, process.env['JWT_SECRET'] || 'fallback-secret');
+        const decoded = jsonwebtoken_1.default.verify(jwtToken, 'fallback-secret');
         const user = await User_1.default.findByPk(decoded.id, {
             attributes: ['id', 'first_name', 'last_name', 'email', 'role', 'is_active'],
         });

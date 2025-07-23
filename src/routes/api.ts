@@ -1,4 +1,4 @@
-import { Router, Request, Response } from 'express';
+import { Router } from 'express';
 import multer from 'multer';
 import { AuthController } from '../controllers/AuthController';
 import { ServiceController } from '../controllers/ServiceController';
@@ -27,7 +27,8 @@ const router = Router();
 router.post('/auth/register', AuthController.register);
 router.post('/auth/login', AuthController.login);
 router.post('/auth/admin/login', AuthController.adminLogin);
-router.get('/auth/verify-email/:id/:hash', (_req: Request, _res: Response) => {/* AuthController.emailVerify */});
+router.get('/auth/verify-email/:userId/:token', AuthController.verifyEmail);
+router.post('/auth/resend-verification', AuthController.resendVerificationEmail);
 router.post('/auth/forgot-password', AuthController.forgotPassword);
 router.post('/auth/reset-password', AuthController.resetPassword);
 router.get('/auth/me', auth, AuthController.getCurrentUser);
@@ -87,10 +88,10 @@ router.post('/order/update-status/:id', OrderController.updateStatus);
 router.get('/generate-pdf', ExcelController.exportOrders);
 
 // AUTHENTICATED ROUTES (to be wrapped with auth middleware)
-router.get('/orders', auth, OrderController.index);
-router.get('/orders/:id', auth, OrderController.show);
-router.post('/orders', auth, OrderController.create);
-router.put('/orders/:id/status', auth, OrderController.updateStatus);
+router.get('/orders', optionalAuth, OrderController.index);
+router.get('/orders/:id', optionalAuth, OrderController.show);
+router.post('/orders', optionalAuth, OrderController.create);
+router.put('/orders/:id/status', optionalAuth, OrderController.updateStatus);
 
 // Cart routes (protected)
 router.get('/cart', auth, CartController.index);
@@ -108,9 +109,11 @@ router.post('/stripe/subscribe/guest', PaymentController.stripeSubscribe); // Gu
 router.post('/paypal', optionalAuth, PaymentController.paypal); // Works for both auth and guest users
 router.post('/create-subscription', auth, PaymentController.createSubscription);
 router.get('/fetch/order', auth, PaymentController.getOrderDetails);
-router.get('/user-orders/:user_id', auth, PaymentController.userOrders);
+router.get('/user-orders/:user_id', PaymentController.userOrders);
 router.post('/success', optionalAuth, PaymentController.success); // Works for both auth and guest users
 router.get('/cancel', optionalAuth, PaymentController.cancel); // Works for both auth and guest users
+
+// New payment processing route with the specified structure
 
 // BLOG ROUTES
 router.use('/', blogRoutes);

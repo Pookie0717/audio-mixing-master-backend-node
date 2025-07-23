@@ -10,6 +10,7 @@ interface UserAttributes {
   last_name: string;
   email: string;
   email_verified_at?: Date;
+  email_verification_token?: string;
   phone_number?: string;
   password: string;
   role: string;
@@ -19,7 +20,7 @@ interface UserAttributes {
   updatedAt?: Date;
 }
 
-interface UserCreationAttributes extends Optional<UserAttributes, 'id' | 'role' | 'is_active' | 'createdAt' | 'updatedAt' | 'email_verified_at' | 'remember_token'> {}
+interface UserCreationAttributes extends Optional<UserAttributes, 'id' | 'role' | 'is_active' | 'createdAt' | 'updatedAt' | 'email_verified_at' | 'email_verification_token' | 'remember_token'> {}
 
 class User extends Model<UserAttributes, UserCreationAttributes> implements UserAttributes {
   public id!: number;
@@ -28,6 +29,7 @@ class User extends Model<UserAttributes, UserCreationAttributes> implements User
   public last_name!: string;
   public email!: string;
   public email_verified_at?: Date;
+  public email_verification_token?: string;
   public phone_number?: string;
   public password!: string;
   public role!: string;
@@ -82,6 +84,10 @@ User.init(
     },
     email_verified_at: {
       type: DataTypes.DATE,
+      allowNull: true,
+    },
+    email_verification_token: {
+      type: DataTypes.STRING(100),
       allowNull: true,
     },
     phone_number: {

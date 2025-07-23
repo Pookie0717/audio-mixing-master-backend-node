@@ -3,10 +3,23 @@ var __importDefault = (this && this.__importDefault) || function (mod) {
     return (mod && mod.__esModule) ? mod : { "default": mod };
 };
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.sendRevisionSuccessEmail = exports.sendGiftCardEmail = exports.sendOrderStatusEmail = exports.sendOrderSuccessEmail = exports.sendOrderCompletedEmail = exports.sendOrderConfirmationEmail = exports.sendPasswordResetEmail = exports.sendWelcomeEmail = exports.sendEmail = exports.initializeEmailService = void 0;
+exports.sendCartReminderEmail = exports.sendEmailVerificationSuccess = exports.sendEmailVerificationRequest = exports.sendPasswordResetEmailUpdated = exports.sendRevisionProgressEmail = exports.sendOrderDeliveredEmail = exports.sendOrderStatusUpdateEmail = exports.sendSubscriptionDiscountEmail = exports.sendRevisionSuccessEmail = exports.sendGiftCardEmail = exports.sendOrderStatusEmail = exports.sendOrderSuccessEmail = exports.sendOrderCompletedEmail = exports.sendOrderConfirmationEmail = exports.sendPasswordResetEmail = exports.sendWelcomeEmail = exports.sendEmail = exports.initializeEmailService = exports.getEmailServiceStatus = void 0;
 const nodemailer_1 = __importDefault(require("nodemailer"));
 let transporter = null;
 let emailServiceAvailable = false;
+const stripHtmlTags = (html) => {
+    return html.replace(/<[^>]*>/g, '');
+};
+const getEmailServiceStatus = () => {
+    return {
+        available: emailServiceAvailable,
+        configured: !!(process.env['SMTP_HOST'] && process.env['SMTP_USER'] && process.env['SMTP_PASS']),
+        smtpHost: process.env['SMTP_HOST'] || 'Not configured',
+        smtpUser: process.env['SMTP_USER'] || 'Not configured',
+        smtpPort: process.env['SMTP_PORT'] || '587',
+    };
+};
+exports.getEmailServiceStatus = getEmailServiceStatus;
 const initializeEmailService = async () => {
     try {
         const smtpHost = process.env['SMTP_HOST'];
@@ -25,8 +38,15 @@ const initializeEmailService = async () => {
                 user: smtpUser,
                 pass: smtpPass,
             },
+            connectionTimeout: 10000,
+            greetingTimeout: 10000,
+            socketTimeout: 10000,
         });
-        await transporter.verify();
+        const verifyPromise = transporter.verify();
+        const timeoutPromise = new Promise((_, reject) => {
+            setTimeout(() => reject(new Error('Connection timeout')), 15000);
+        });
+        await Promise.race([verifyPromise, timeoutPromise]);
         emailServiceAvailable = true;
         console.log('✅ Email service initialized successfully');
     }
@@ -50,19 +70,29 @@ const sendEmail = async (options) => {
             return { messageId: 'console-log' };
         }
         const mailOptions = {
-            from: process.env['MAIL_FROM'],
+            from: process.env['SMTP_USER'],
             to: options.to,
             subject: options.subject,
             html: options.html,
-            text: options.text,
+            text: options.text || stripHtmlTags(options.html),
         };
-        const info = await transporter.sendMail(mailOptions);
+        const sendPromise = transporter.sendMail(mailOptions);
+        const timeoutPromise = new Promise((_, reject) => {
+            setTimeout(() => reject(new Error('Email sending timeout')), 30000);
+        });
+        const info = await Promise.race([sendPromise, timeoutPromise]);
         console.log('✅ Email sent successfully:', info.messageId);
         return info;
     }
     catch (error) {
         console.error('❌ Email sending failed:', error);
-        return { error: 'Email sending failed' };
+        console.log('📧 Email content (sending failed):', {
+            to: options.to,
+            subject: options.subject,
+            html: options.html,
+            text: options.text,
+        });
+        return { error: 'Email sending failed', messageId: 'failed' };
     }
 };
 exports.sendEmail = sendEmail;
@@ -81,7 +111,7 @@ const sendWelcomeEmail = async (user) => {
 };
 exports.sendWelcomeEmail = sendWelcomeEmail;
 const sendPasswordResetEmail = async (user, resetToken) => {
-    const resetUrl = `${process.env['APP_URL']}/reset-password/${user.email}/${resetToken}`;
+    const resetUrl = `${process.env['FRONTEND_URL']}/reset-password/${user.email}/${resetToken}`;
     const html = `
     <h1>Password Reset Request</h1>
     <p>Hi ${user.name},</p>
@@ -215,4 +245,205 @@ const sendRevisionSuccessEmail = async (data) => {
     });
 };
 exports.sendRevisionSuccessEmail = sendRevisionSuccessEmail;
+const sendSubscriptionDiscountEmail = async (data) => {
+    const html = `
+    <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
+      <h1 style="color: #333;">🎁 Your 10% OFF Coupon Code!</h1>
+      
+      <h2 style="color: #333;">Your 10% Off Coupon Code!</h2>
+      <p>Thank you for subscribing!</p>
+      
+      <p>Here's your exclusive coupon code: <strong style="color: #e74c3c; font-size: 18px;">${data.couponCode}</strong></p>
+      
+      <p>To redeem, simply copy the code and paste it at checkout to receive your discount. Enjoy 10% off on any of our services and include as many songs as you'd like for this first order.</p>
+      
+      <p><strong>Note:</strong> This code is valid for a single use only. Don't miss the chance to maximize your savings on your initial purchase.</p>
+      
+      <div style="text-align: center; margin: 30px 0;">
+        <a href="https://audiomixingmastering.com/services" style="background-color: #3498db; color: white; padding: 12px 24px; text-decoration: none; border-radius: 5px; display: inline-block;">Use Coupon Now</a>
+      </div>
+      
+      <p style="margin-top: 30px; color: #666;">Audio Mixing Mastering</p>
+    </div>
+  `;
+    return (0, exports.sendEmail)({
+        to: data.email,
+        subject: '🎁 Your 10% OFF Coupon Code!',
+        html,
+    });
+};
+exports.sendSubscriptionDiscountEmail = sendSubscriptionDiscountEmail;
+const sendOrderStatusUpdateEmail = async (data) => {
+    const html = `
+    <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
+      <h1 style="color: #333;">Update on Your Order Status!</h1>
+      
+      <p>Your project is now <strong style="color: #e74c3c;">${data.status}</strong>! You can view the latest changes or additions in your panel.</p>
+      
+      <p><strong>Order ID:</strong> ${data.order_id}</p>
+      
+      <div style="text-align: center; margin: 30px 0;">
+        <a href="${data.url}" style="background-color: #3498db; color: white; padding: 12px 24px; text-decoration: none; border-radius: 5px; display: inline-block;">View Order Details</a>
+      </div>
+      
+      <p>If you have any questions or need further clarification, feel free to reach out.</p>
+      
+      <p>Thank you for your continued trust - We're making great progress!</p>
+      
+      <p style="margin-top: 30px; color: #666;">Audio Mixing Mastering</p>
+    </div>
+  `;
+    return (0, exports.sendEmail)({
+        to: data.email,
+        subject: 'Update on Your Order Status!',
+        html,
+    });
+};
+exports.sendOrderStatusUpdateEmail = sendOrderStatusUpdateEmail;
+const sendOrderDeliveredEmail = async (data) => {
+    const html = `
+    <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
+      <h1 style="color: #333;">Hooray! Your Order Has Been Successfully Delivered!</h1>
+      
+      <p>Hi ${data.name},</p>
+      
+      <p>We are pleased to inform you that your order has been delivered successfully! You can view the full details of your order by clicking the button below:</p>
+      
+      <p><strong>Order ID:</strong> ${data.order_id}</p>
+      
+      <div style="text-align: center; margin: 30px 0;">
+        <a href="${data.url}" style="background-color: #27ae60; color: white; padding: 12px 24px; text-decoration: none; border-radius: 5px; display: inline-block;">View Order Details</a>
+      </div>
+      
+      <p>If you have any questions or need assistance, feel free to reach out to us. We appreciate your trust in us and hope you enjoy your new radio ready banger! ;)</p>
+      
+      <p style="margin-top: 30px; color: #666;">Audio Mixing Mastering</p>
+    </div>
+  `;
+    return (0, exports.sendEmail)({
+        to: data.email,
+        subject: 'Hooray! Your Order Has Been Successfully Delivered!',
+        html,
+    });
+};
+exports.sendOrderDeliveredEmail = sendOrderDeliveredEmail;
+const sendRevisionProgressEmail = async (data) => {
+    const html = `
+    <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
+      <h1 style="color: #333;">Your Revision is in Progress</h1>
+      
+      <p>Hi ${data.name},</p>
+      
+      <p>Your revision request has been successfully received, and our engineering team is actively working on it.</p>
+      
+      <p><strong>Order ID:</strong> ${data.order_id}</p>
+      
+      <p>We'll keep you updated on the progress and notify you promptly once the revision is completed.</p>
+      
+      <p>Thank you for your patience and trust in our team!</p>
+      
+      <p style="margin-top: 30px; color: #666;">Audio Mixing Mastering</p>
+    </div>
+  `;
+    return (0, exports.sendEmail)({
+        to: data.email,
+        subject: 'Your Revision is in Progress',
+        html,
+    });
+};
+exports.sendRevisionProgressEmail = sendRevisionProgressEmail;
+const sendPasswordResetEmailUpdated = async (data) => {
+    const html = `
+    <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
+      <h1 style="color: #333;">Password Reset Request</h1>
+      
+      <p>Hi ${data.name},</p>
+      
+      <p>It looks like you've requested a password reset. If you did not make this request, please disregard this email.</p>
+      
+      <p>To reset your password, simply click the link below:</p>
+      
+      <div style="text-align: center; margin: 30px 0;">
+        <a href="${data.resetUrl}" style="background-color: #3498db; color: white; padding: 12px 24px; text-decoration: none; border-radius: 5px; display: inline-block;">Reset Password</a>
+      </div>
+      
+      <p>Thank you,<br>Audio Mixing Mastering Team</p>
+    </div>
+  `;
+    return (0, exports.sendEmail)({
+        to: data.email,
+        subject: 'Password Reset Request',
+        html,
+    });
+};
+exports.sendPasswordResetEmailUpdated = sendPasswordResetEmailUpdated;
+const sendEmailVerificationRequest = async (data) => {
+    const html = `
+      <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
+        <h1 style="color: #333;">Action Required: Verify Your Email Address</h1>
+        <p>Dear ${data.name},</p>
+        <p>To complete your registration, please click the button below to verify your email address:</p>
+        <div style="text-align: center; margin: 30px 0;">
+          <a href="${data.verificationUrl}" style="background-color: #3498db; color: white; padding: 12px 24px; text-decoration: none; border-radius: 5px; display: inline-block;">Verify My Email</a>
+        </div>
+        <p>If you did not initiate this request, please disregard this email.</p>
+        <p>Thank you for joining us at AudioMixingMastering.com!</p>
+        <p>Best regards,<br>Audio Mixing Mastering</p>
+      </div>
+    `;
+    return (0, exports.sendEmail)({
+        to: data.email,
+        subject: 'Action Required: Verify Your Email Address',
+        html,
+    });
+};
+exports.sendEmailVerificationRequest = sendEmailVerificationRequest;
+const sendEmailVerificationSuccess = async (data) => {
+    const html = `
+    <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
+      <h1 style="color: #333;">Email Verification Successful</h1>
+      
+      <p>Dear ${data.name},</p>
+      
+      <p>We are pleased to inform you that your email address has been successfully verified. You can now enjoy full access to all features of our services.</p>
+      
+      <p>If you have any questions or need further assistance, please don't hesitate to reach out.</p>
+      
+      <p>Thank you for being a valued member of our community!</p>
+      
+      <p>Best regards,<br>Audio Mixing Mastering</p>
+    </div>
+  `;
+    return (0, exports.sendEmail)({
+        to: data.email,
+        subject: 'Email Verification Successful',
+        html,
+    });
+};
+exports.sendEmailVerificationSuccess = sendEmailVerificationSuccess;
+const sendCartReminderEmail = async (data) => {
+    const html = `
+    <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
+      <h1 style="color: #333;">Don't Forget! Your Services Are Waiting in Your Cart!</h1>
+      
+      <p>Hi ${data.name},</p>
+      
+      <p>It looks like you've left some services in your shopping cart. Don't miss out!</p>
+      
+      <div style="text-align: center; margin: 30px 0;">
+        <a href="https://audiomixingmastering.com/services" style="background-color: #e74c3c; color: white; padding: 12px 24px; text-decoration: none; border-radius: 5px; display: inline-block;">Complete Your Order Now</a>
+      </div>
+      
+      <p>Complete your order now at audiomixingmastering.com/services before it's gone.</p>
+      
+      <p>Thank you,<br>Audio Mixing Mastering</p>
+    </div>
+  `;
+    return (0, exports.sendEmail)({
+        to: data.email,
+        subject: "Don't Forget! Your Services Are Waiting in Your Cart!",
+        html,
+    });
+};
+exports.sendCartReminderEmail = sendCartReminderEmail;
 //# sourceMappingURL=EmailService.js.map

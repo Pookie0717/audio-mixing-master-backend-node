@@ -6,6 +6,9 @@ class OrderController {
     static async index(req, res) {
         try {
             const userId = req.user?.id;
+            if (!userId) {
+                return res.status(401).json({ message: 'User not authenticated' });
+            }
             const page = parseInt(req.query['page']) || 1;
             const perPage = parseInt(req.query['per_page']) || 10;
             const offset = (page - 1) * perPage;

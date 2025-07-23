@@ -14,7 +14,23 @@ export const auth = async (req: AuthRequest, res: Response, next: NextFunction) 
       return res.status(401).json({ message: 'No token, authorization denied' });
     }
 
-    const decoded = jwt.verify(token, process.env['JWT_SECRET'] || 'fallback-secret') as any;
+    // Handle admin token format: "id|jwt_token"
+    let jwtToken: string;
+    if (token.includes('|')) {
+      const parts = token.split('|');
+      if (parts.length < 2 || !parts[1]) {
+        return res.status(401).json({ message: 'Token is not valid' });
+      }
+      jwtToken = parts[1];
+    } else {
+      jwtToken = token;
+    }
+
+    if (!jwtToken) {
+      return res.status(401).json({ message: 'Token is not valid' });
+    }
+
+    const decoded = jwt.verify(jwtToken, 'fallback-secret') as any;
     
     const user = await User.findByPk(decoded.id, {
       attributes: ['id', 'first_name', 'last_name', 'email', 'role', 'is_active'],
@@ -46,7 +62,21 @@ export const optionalAuth = async (req: AuthRequest, _res: Response, next: NextF
       return next();
     }
 
-    const decoded = jwt.verify(token, process.env['JWT_SECRET'] || 'fallback-secret') as any;
+    // Handle admin token format: "id|jwt_token"
+    let jwtToken: string;
+    if (token.includes('|')) {
+      const parts = token.split('|');
+      if (parts.length < 2 || !parts[1]) {
+        // Invalid token format, continue as guest user
+        req.user = null;
+        return next();
+      }
+      jwtToken = parts[1];
+    } else {
+      jwtToken = token;
+    }
+
+    const decoded = jwt.verify(jwtToken, 'fallback-secret') as any;
     
     const user = await User.findByPk(decoded.id, {
       attributes: ['id', 'first_name', 'last_name', 'email', 'role', 'is_active'],
@@ -91,7 +121,7 @@ export const adminAuth = async (req: AuthRequest, res: Response, next: NextFunct
       return res.status(401).json({ message: 'Token is not valid' });
     }
 
-    const decoded = jwt.verify(jwtToken, process.env['JWT_SECRET'] || 'fallback-secret') as any;
+    const decoded = jwt.verify(jwtToken, 'fallback-secret') as any;
     
     const user = await User.findByPk(decoded.id, {
       attributes: ['id', 'first_name', 'last_name', 'email', 'role', 'is_active'],

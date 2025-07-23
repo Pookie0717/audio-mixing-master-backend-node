@@ -6,6 +6,7 @@ interface UserAttributes {
     last_name: string;
     email: string;
     email_verified_at?: Date;
+    email_verification_token?: string;
     phone_number?: string;
     password: string;
     role: string;
@@ -14,7 +15,7 @@ interface UserAttributes {
     createdAt?: Date;
     updatedAt?: Date;
 }
-interface UserCreationAttributes extends Optional<UserAttributes, 'id' | 'role' | 'is_active' | 'createdAt' | 'updatedAt' | 'email_verified_at' | 'remember_token'> {
+interface UserCreationAttributes extends Optional<UserAttributes, 'id' | 'role' | 'is_active' | 'createdAt' | 'updatedAt' | 'email_verified_at' | 'email_verification_token' | 'remember_token'> {
 }
 declare class User extends Model<UserAttributes, UserCreationAttributes> implements UserAttributes {
     id: number;
@@ -23,6 +24,7 @@ declare class User extends Model<UserAttributes, UserCreationAttributes> impleme
     last_name: string;
     email: string;
     email_verified_at?: Date;
+    email_verification_token?: string;
     phone_number?: string;
     password: string;
     role: string;

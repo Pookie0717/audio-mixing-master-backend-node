@@ -52,6 +52,10 @@ User.init({
         type: sequelize_1.DataTypes.DATE,
         allowNull: true,
     },
+    email_verification_token: {
+        type: sequelize_1.DataTypes.STRING(100),
+        allowNull: true,
+    },
     phone_number: {
         type: sequelize_1.DataTypes.STRING,
         allowNull: true,

@@ -360,12 +360,12 @@ export class AdminOrderController {
 
         // Send email to user
           try {
-            await sendOrderStatusEmail({
+            sendOrderStatusEmail({
               email: user.email,
               name: `${user.first_name} ${user.last_name}`,
               order_id: Number(id),
               status: orderStatusMessage,
-              url: `${process.env['FRONTEND_URL'] || 'http://localhost:3000'}/order/${id}`,
+              url: `${process.env['FRONTEND_URL']}/order/${id}`,
               message: `Your project is now ${orderStatusMessage}! You can view the latest changes or additions in your panel`
             });
           } catch (emailError) {
@@ -376,7 +376,7 @@ export class AdminOrderController {
           try {
             const admin = await User.findOne({ where: { role: 'admin' } });
             if (admin) {
-              await sendOrderStatusEmail({
+              sendOrderStatusEmail({
                 email: admin.email,
                 name: `${admin.first_name} ${admin.last_name}`,
                 order_id: Number(id),

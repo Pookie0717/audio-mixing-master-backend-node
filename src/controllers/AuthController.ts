@@ -1,8 +1,9 @@
 import { Request, Response } from 'express';
 import jwt from 'jsonwebtoken';
+import crypto from 'crypto';
 import User from '../models/User';
 import { Favourite, Service, Category, Label } from '../models';
-import { sendWelcomeEmail, sendPasswordResetEmail } from '../services/EmailService';
+import { sendWelcomeEmail, sendPasswordResetEmail, sendEmailVerificationRequest } from '../services/EmailService';
 
 export class AuthController {
   // Register user
@@ -29,6 +30,9 @@ export class AuthController {
         }
       }
 
+      // Generate email verification token
+      const emailVerificationToken = crypto.randomBytes(32).toString('hex');
+
       // Create user (password will be hashed automatically by model hooks)
       const user = await User.create({
         first_name,
@@ -37,7 +41,8 @@ export class AuthController {
         password,
         phone_number,
         role: 'user',
-        is_active: 0,
+        is_active: 0, // Set to inactive until email is verified
+        email_verification_token: emailVerificationToken,
       });
 
       // Generate JWT token
@@ -48,18 +53,31 @@ export class AuthController {
         { expiresIn: '7d' }
       );
 
-      // Send welcome email
+      // Send email verification email
       try {
-        await sendWelcomeEmail({ name: user.first_name + ' ' + user.last_name, email: user.email });
+        const verificationUrl = `http://${process.env['FRONTEND_URL']}/verify-email/${user.id}/${emailVerificationToken}`;
+        console.log(verificationUrl);
+        await sendEmailVerificationRequest({
+          name: `${user.first_name} ${user.last_name}`,
+          email: user.email,
+          verificationUrl: verificationUrl
+        });
       } catch (emailError) {
-        console.error('Failed to send welcome email:', emailError);
+        console.error('Failed to send verification email:', emailError);
       }
 
       return res.status(200).json({
         success: true,
-        message: 'User registered successfully',
+        message: 'Please check your email to verify your account.',
         data: {
-          user,
+          user: {
+            id: user.id,
+            first_name: user.first_name,
+            last_name: user.last_name,
+            email: user.email,
+            is_active: user.is_active,
+            email_verified_at: user.email_verified_at,
+          },
           token,
         },
       });
@@ -109,7 +127,7 @@ export class AuthController {
 
       // Check if user is active
       if (user.is_active !== 1) {
-        return res.status(400).json({ error: 'Account is not active' });
+        return res.status(400).json({ error: 'Account is not active. Please verify your email first.' });
       }
 
       // Check password
@@ -119,29 +137,131 @@ export class AuthController {
       }
 
       // Generate JWT token
-      const secret = process.env['JWT_SECRET'] || 'fallback-secret';
+      const secret = 'fallback-secret';
       const token = jwt.sign(
         { id: user.id },
         secret,
         { expiresIn: '7d' }
       );
 
-      return res.json({
+      return res.status(200).json({
         success: true,
         message: 'Login successful',
         data: {
-            user: {
-              id: user.id,
-              name: user.first_name + ' ' + user.last_name,
-              email: user.email,
-              role: user.role,
-              is_active: user.is_active,
-            },
+          user: {
+            id: user.id,
+            first_name: user.first_name,
+            last_name: user.last_name,
+            email: user.email,
+            role: user.role,
+            is_active: user.is_active,
+            email_verified_at: user.email_verified_at,
+          },
           token,
         },
       });
     } catch (error) {
       console.error('Login error:', error);
+      return res.status(500).json({ message: 'Server error' });
+    }
+  }
+
+  // Verify email
+  static async verifyEmail(req: Request, res: Response) {
+    try {
+      const { userId, token } = req.params;
+
+      // Find user by ID and token
+      const user = await User.findOne({
+        where: {
+          id: userId,
+          email_verification_token: token,
+        },
+      });
+
+      if (!user) {
+        return res.status(400).json({ message: 'Invalid verification link or token has expired' });
+      }
+
+      // Check if email is already verified
+      if (user.email_verified_at) {
+        return res.status(200).json({
+          success: true,
+          message: 'Email verified successfully! You can now log in to your account.',
+        });
+      }
+
+      // Update user to verified
+      await user.update({
+        email_verified_at: new Date(),
+        is_active: 1,
+      });
+
+      // Send welcome email
+      try {
+        await sendWelcomeEmail({
+          name: `${user.first_name} ${user.last_name}`,
+          email: user.email
+        });
+      } catch (emailError) {
+        console.error('Failed to send welcome email:', emailError);
+      }
+
+      return res.status(200).json({
+        success: true,
+        message: 'Email verified successfully! You can now log in to your account.',
+      });
+    } catch (error) {
+      console.error('Email verification error:', error);
+      return res.status(500).json({ message: 'Server error' });
+    }
+  }
+
+  // Resend verification email
+  static async resendVerificationEmail(req: Request, res: Response) {
+    try {
+      const { email } = req.body;
+
+      if (!email) {
+        return res.status(400).json({ message: 'Email is required' });
+      }
+
+      // Find user by email
+      const user = await User.findOne({ where: { email } });
+
+      if (!user) {
+        return res.status(404).json({ message: 'User not found' });
+      }
+
+      // Check if email is already verified
+      if (user.email_verified_at) {
+        return res.status(400).json({ message: 'Email is already verified' });
+      }
+
+      // Generate new verification token
+      const emailVerificationToken = crypto.randomBytes(32).toString('hex');
+      user.email_verification_token = emailVerificationToken;
+      await user.save();
+
+      // Send new verification email
+      try {
+        const verificationUrl = `${process.env['FRONTEND_URL'] || 'http://localhost:3000'}/api/auth/verify-email/${user.id}/${emailVerificationToken}`;
+        await sendEmailVerificationRequest({
+          name: `${user.first_name} ${user.last_name}`,
+          email: user.email,
+          verificationUrl: verificationUrl
+        });
+      } catch (emailError) {
+        console.error('Failed to send verification email:', emailError);
+        return res.status(500).json({ message: 'Failed to send verification email' });
+      }
+
+      return res.status(200).json({
+        success: true,
+        message: 'Verification email sent successfully. Please check your email.',
+      });
+    } catch (error) {
+      console.error('Resend verification email error:', error);
       return res.status(500).json({ message: 'Server error' });
     }
   }
@@ -161,15 +281,7 @@ export class AuthController {
       }
 
       // Generate reset token
-      const resetToken = jwt.sign(
-        { id: user.id },
-        process.env['JWT_SECRET'] || 'fallback-secret',
-        { expiresIn: '1h' }
-      );
-
-      // Note: Password reset token functionality would need a separate model
-      // For now, we'll just send the email with the token
-      // In a real implementation, you'd create a PasswordResetToken model
+      const resetToken = crypto.randomBytes(32).toString('hex');
 
       // Send reset email
       try {
@@ -225,6 +337,10 @@ export class AuthController {
   // Get current user
   static async getCurrentUser(req: any, res: Response) {
     try {
+      if (!req.user || !req.user.id) {
+        return res.status(401).json({ message: 'User not authenticated' });
+      }
+
       const user = await User.findByPk(req.user.id, {
         attributes: { exclude: ['password'] },
       });
@@ -542,7 +658,7 @@ export class AuthController {
       }
 
       // Generate JWT token with admin prefix
-      const secret = process.env['JWT_SECRET'] || 'fallback-secret';
+      const secret = 'fallback-secret';
       const token = `${user.id}|${jwt.sign(
         { id: user.id, role: user.role },
         secret,

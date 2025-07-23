@@ -49,16 +49,33 @@ export class PaymentController {
   // Create Stripe payment intent - for frontend integration (works for both auth and guest)
   static async createPaymentIntent(req: AuthRequest | any, res: Response) {
     try {
-      const { amount, user_id: _user_id, cart_items } = req.body;
+      const { 
+        amount, 
+        user_id: _user_id, 
+        cartItems,
+        finalTotal,
+        currency = 'usd'
+      } = req.body;
 
-      if (!amount || !cart_items) {
+      if (!amount || !cartItems) {
         return res.status(400).json({ message: 'Amount and cart items are required' });
       }
 
-      const paymentIntent = await createStripePaymentIntent(parseFloat(amount), 'usd');
+      // Use finalTotal if provided, otherwise use amount
+      const paymentAmount = finalTotal || amount;
+      
+      // Convert amount to cents for Stripe if not already in cents
+      const amountInCents = typeof paymentAmount === 'number' && paymentAmount > 100 ? 
+        paymentAmount : // Already in cents
+        Math.round(paymentAmount * 100); // Convert to cents
+
+      const paymentIntent = await createStripePaymentIntent(amountInCents / 100, currency.toLowerCase());
 
       return res.json({
-        clientSecret: paymentIntent.client_secret
+        clientSecret: paymentIntent.client_secret,
+        paymentIntentId: paymentIntent.id,
+        amount: amountInCents,
+        currency: currency.toLowerCase()
       });
     } catch (error) {
       console.error('Stripe payment intent error:', error);
@@ -71,7 +88,7 @@ export class PaymentController {
   static async stripePay(req: AuthRequest | any, res: Response) {
     try {
       const { 
-        cart_items, 
+        cart_items, // Updated to match the request structure
         amount, 
         currency = 'USD', 
         promoCode, 
@@ -79,22 +96,37 @@ export class PaymentController {
         order_type = 'one_time', 
         payment_method_id, 
         customerEmail, 
-        customerName
+        customerName,
+        // New fields from the specified structure
+        finalTotal,
+        isGuestCheckout,
+        guest_info
       } = req.body;
 
-      if (!cart_items || !amount) {
+      // Use cart_items if provided, otherwise fall back to cartItems for backward compatibility
+      const cartItemsToUse = cart_items || cart_items;
+
+      if (!cartItemsToUse || !amount) {
         return res.status(400).json({ message: 'Cart items and amount are required' });
       }
 
       // Handle both authenticated and guest users
-      const userEmail = req.user?.email || customerEmail;
-      const userName = req.user ? `${req.user.first_name} ${req.user.last_name}` : customerName;
+      const userEmail = req.user?.email || customerEmail || (guest_info?.email);
+      const userName = req.user ? `${req.user.first_name} ${req.user.last_name}` : customerName || `${guest_info?.first_name} ${guest_info?.last_name}`;
       const currentUserId = req.user?.id || user_id || 'guest';
+
+      // Use finalTotal if provided, otherwise use amount
+      const paymentAmount = finalTotal || amount;
+      
+      // Convert amount to cents for Stripe if not already in cents
+      const amountInCents = typeof paymentAmount === 'number' && paymentAmount > 100 ? 
+        paymentAmount : // Already in cents
+        Math.round(paymentAmount * 100); // Convert to cents
 
       if (payment_method_id) {
         // Handle payment method flow (for authenticated users with payment method)
         try {
-          const paymentIntent = await createStripePaymentIntent(parseFloat(amount), currency.toLowerCase());
+          const paymentIntent = await createStripePaymentIntent(amountInCents / 100, currency.toLowerCase());
           
           // Confirm the payment with the payment method
           const stripe = require('stripe')(process.env['STRIPE_SECRET_KEY']);
@@ -103,7 +135,7 @@ export class PaymentController {
             return_url: `${process.env['FRONTEND_URL']}/success`,
           });
 
-          console.log(`paymentIntentResult: ${paymentIntentResult}`);
+          console.log(`paymentIntentResult: ${JSON.stringify(paymentIntentResult)}`);
 
           return res.json({
             success: true,
@@ -116,27 +148,39 @@ export class PaymentController {
         }
       } else {
         // Handle checkout session flow (for guest users or without payment method)
-        const lineItems = cart_items.map((item: any) => ({
+        const lineItems = cartItemsToUse.map((item: any) => ({
           price_data: {
             product_data: {
               name: item.service_name,
             },
-            currency: 'USD',
-            unit_amount: item.price,
+            currency: currency.toUpperCase(),
+            unit_amount: typeof item.price === 'number' && item.price > 100 ? 
+              item.price : // Already in cents
+              Math.round(item.price * 100), // Convert to cents
           },
           quantity: item.qty,
         }));
+
+        // Prepare metadata with guest info if available
+        const metadata: any = {
+          user_id: currentUserId,
+        };
+
+        if (isGuestCheckout && guest_info) {
+          metadata.guest_first_name = guest_info.first_name;
+          metadata.guest_last_name = guest_info.last_name;
+          metadata.guest_email = guest_info.email;
+          metadata.guest_phone = guest_info.phone;
+        }
 
         const session = await createStripeCheckoutSession({
           line_items: lineItems,
           mode: 'payment',
           allow_promotion_codes: false,
-          metadata: {
-            user_id: currentUserId,
-          },
+          metadata: metadata,
           customer_email: userEmail,
-          success_url: `${process.env['FRONTEND_URL']}/success?amount=${amount}&currency=${currency}&promoCode=${promoCode || ''}&cart_items=${encodeURIComponent(JSON.stringify(cart_items))}&user_id=${currentUserId}&transaction_id={CHECKOUT_SESSION_ID}&payer_name=${userName}&payer_email=${userEmail}&order_type=${order_type}`,
-          cancel_url: `${process.env['FRONTEND_URL']}/cancel?amount=${amount}&currency=${currency}&promoCode=${promoCode || ''}&cart_items=${encodeURIComponent(JSON.stringify(cart_items))}&transaction_id={CHECKOUT_SESSION_ID}`,
+          success_url: `${process.env['FRONTEND_URL']}/success?amount=${paymentAmount}&currency=${currency}&promoCode=${promoCode || ''}&cartItems=${encodeURIComponent(JSON.stringify(cartItemsToUse))}&user_id=${currentUserId}&transaction_id={CHECKOUT_SESSION_ID}&payer_name=${userName}&payer_email=${userEmail}&order_type=${order_type}&isGuestCheckout=${isGuestCheckout || false}&guest_info=${encodeURIComponent(JSON.stringify(guest_info || {}))}`,
+          cancel_url: `${process.env['FRONTEND_URL']}/cancel?amount=${paymentAmount}&currency=${currency}&promoCode=${promoCode || ''}&cartItems=${encodeURIComponent(JSON.stringify(cartItemsToUse))}&transaction_id={CHECKOUT_SESSION_ID}&isGuestCheckout=${isGuestCheckout || false}`,
         });
 
         return res.json({ url: session.url });
@@ -450,9 +494,11 @@ export class PaymentController {
         payer_email,
         order_type,
         payment_method,
-        cart_items,
+        cartItems,
         promoCode,
-        order_id
+        order_id,
+        isGuestCheckout,
+        guest_info
       } = req.body;
 
       console.log('Payment success request body:', {
@@ -463,23 +509,31 @@ export class PaymentController {
         payer_email,
         order_type,
         payment_method,
-        cart_items: cart_items?.length,
+        cartItems: cartItems?.length,
         promoCode,
         order_id
       });
 
       // Validate required fields
-      if (!transaction_id || !amount || !payer_name || !payer_email || !order_type || !payment_method || !cart_items) {
+      if (!transaction_id || !amount || !payer_name || !payer_email || !order_type || !payment_method || !cartItems) {
         return res.status(400).json({ message: 'Missing required fields' });
       }
 
       let user;
       
       // Handle guest users
-      if (!user_id || user_id === 'guest') {
-        // Create a temporary guest user account
-        const [firstName, ...lastNameParts] = payer_name.split(' ');
-        const lastName = lastNameParts.join(' ') || 'Guest';
+      if (!user_id || user_id === 'guest' || isGuestCheckout) {
+        // Use guest_info if available, otherwise parse from payer_name
+        let firstName, lastName;
+        
+        if (guest_info && guest_info.first_name && guest_info.last_name) {
+          firstName = guest_info.first_name;
+          lastName = guest_info.last_name;
+        } else {
+          const [firstNamePart, ...lastNameParts] = payer_name.split(' ');
+          firstName = firstNamePart;
+          lastName = lastNameParts.join(' ') || 'Guest';
+        }
         
         console.log('Creating guest user:', { firstName, lastName, email: payer_email });
         user = await User.findOne({ where: { email: payer_email } });
@@ -489,6 +543,7 @@ export class PaymentController {
               first_name: firstName,
               last_name: lastName,
               email: payer_email,
+              phone_number: guest_info?.phone || null,
               password: `guest_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`, // Temporary password
               role: 'guest',
               is_active: 1
@@ -543,7 +598,7 @@ export class PaymentController {
       let totalAmount = 0;
 
       // Process each cart item
-      for (const item of cart_items) {
+      for (const item of cartItems) {
         const service = await Service.findByPk(item.service_id);
         
         if (service && service.category_id === 15) {
@@ -608,7 +663,7 @@ export class PaymentController {
 
       // Remove items from cart if payment type is one_time
       if (order_type === 'one_time') {
-        for (const item of cart_items) {
+        for (const item of cartItems) {
           await Cart.destroy({
             where: {
               service_id: item.service_id,
@@ -624,11 +679,11 @@ export class PaymentController {
       });
 
       // Send emails
-      const userUrl = process.env['FRONTEND_URL'] || 'http://localhost:3000';
-      const adminUrl = process.env['ADMIN_URL'] || 'http://localhost:3001';
+      const userUrl = process.env['FRONTEND_URL'];
+      const adminUrl = process.env['ADMIN_URL'];
 
       // Email to user
-      await sendOrderSuccessEmail({
+      sendOrderSuccessEmail({
         name: `${user.first_name} ${user.last_name}`,
         order_id: order.id,
         message: 'Thank you for your purchase. Your order has been processed successfully. Your order details are as follows',
@@ -640,7 +695,7 @@ export class PaymentController {
       // Email to admin
       const admin = await User.findOne({ where: { role: 'admin' } });
       if (admin) {
-        await sendOrderSuccessEmail({
+        sendOrderSuccessEmail({
           name: `${admin.first_name} ${admin.last_name}`,
           order_id: order.id,
           items: orderItems,
@@ -653,7 +708,7 @@ export class PaymentController {
       // Email to engineers
       const engineers = await User.findAll({ where: { role: 'engineer' } });
       for (const engineer of engineers) {
-        await sendOrderSuccessEmail({
+        sendOrderSuccessEmail({
           name: `${engineer.first_name} ${engineer.last_name}`,
           order_id: order.id,
           items: orderItems,
