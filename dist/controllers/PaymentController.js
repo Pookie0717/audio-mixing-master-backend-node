@@ -61,13 +61,12 @@ class PaymentController {
     }
     static async stripePay(req, res) {
         try {
-            const { cart_items, cartItems, amount, currency = 'USD', promoCode, user_id, order_type = 'one_time', payment_method_id, customerEmail, customerName, finalTotal, isGuestCheckout, guest_info } = req.body;
+            const { cart_items, cartItems, amount, currency = 'USD', promoCode, user_id, order_type = 'one_time', payment_method_id, customerEmail, finalTotal, isGuestCheckout, guest_info } = req.body;
             const cartItemsToUse = cart_items || cartItems;
             if (!cartItemsToUse || !amount) {
                 return res.status(400).json({ message: 'Cart items and amount are required' });
             }
             const userEmail = req.user?.email || customerEmail || (guest_info?.email);
-            const userName = req.user ? `${req.user.first_name} ${req.user.last_name}` : customerName || `${guest_info?.first_name} ${guest_info?.last_name}`;
             const currentUserId = req.user?.id || user_id || 'guest';
             const paymentAmount = finalTotal || amount;
             const amountInCents = typeof paymentAmount === 'number' && paymentAmount > 100 ?
@@ -108,12 +107,17 @@ class PaymentController {
                 }));
                 const metadata = {
                     user_id: currentUserId,
+                    isGuestCheckout: isGuestCheckout || false,
+                    order_type: order_type,
+                    promoCode: promoCode || '',
+                    cartItems: encodeURIComponent(JSON.stringify(cartItemsToUse)),
                 };
                 if (isGuestCheckout && guest_info) {
                     metadata.guest_first_name = guest_info.first_name;
                     metadata.guest_last_name = guest_info.last_name;
                     metadata.guest_email = guest_info.email;
                     metadata.guest_phone = guest_info.phone;
+                    metadata.guest_info = JSON.stringify(guest_info);
                 }
                 const session = await (0, PaymentService_1.createStripeCheckoutSession)({
                     line_items: lineItems,
@@ -121,7 +125,7 @@ class PaymentController {
                     allow_promotion_codes: false,
                     metadata: metadata,
                     customer_email: userEmail,
-                    success_url: `${process.env['FRONTEND_URL']}/success?amount=${paymentAmount}&currency=${currency}&promoCode=${promoCode || ''}&cartItems=${encodeURIComponent(JSON.stringify(cartItemsToUse))}&user_id=${currentUserId}&transaction_id={CHECKOUT_SESSION_ID}&payer_name=${userName}&payer_email=${userEmail}&order_type=${order_type}&isGuestCheckout=${isGuestCheckout || false}&guest_info=${encodeURIComponent(JSON.stringify(guest_info || {}))}`,
+                    success_url: `${process.env['FRONTEND_URL']}/success?session_id={CHECKOUT_SESSION_ID}`,
                     cancel_url: `${process.env['FRONTEND_URL']}/cancel?amount=${paymentAmount}&currency=${currency}&promoCode=${promoCode || ''}&cartItems=${encodeURIComponent(JSON.stringify(cartItemsToUse))}&transaction_id={CHECKOUT_SESSION_ID}&isGuestCheckout=${isGuestCheckout || false}`,
                 });
                 return res.json({ url: session.url });
@@ -143,8 +147,8 @@ class PaymentController {
             if (!service) {
                 return res.status(404).json({ message: 'Service not found' });
             }
-            const userEmail = req.user?.email || customerEmail;
-            const userName = req.user ? `${req.user.first_name} ${req.user.last_name}` : customerName;
+            const userEmail = customerEmail;
+            const userName = customerName;
             const stripe = require('stripe')(process.env['STRIPE_SECRET_KEY']);
             let customer;
             if (customerId) {
@@ -156,13 +160,17 @@ class PaymentController {
                     name: userName,
                 });
             }
+            console.log("About to call createStripeSubscription with:", {
+                customerId: customer.id,
+                priceId: priceId
+            });
             const subscription = await (0, PaymentService_1.createStripeSubscription)(customer.id, priceId);
+            console.log(`subscription: ${JSON.stringify(subscription)}`);
             return res.json({
                 success: true,
                 data: {
                     subscriptionId: subscription.id,
                     status: subscription.status,
-                    customerId: customer.id,
                     clientSecret: subscription.latest_invoice && typeof subscription.latest_invoice === 'object'
                         ? subscription.latest_invoice.payment_intent?.client_secret
                         : undefined,
@@ -170,7 +178,10 @@ class PaymentController {
             });
         }
         catch (error) {
-            console.error('Stripe subscription error:', error);
+            console.error('Stripe subscription error:', JSON.stringify(error, null, 2));
+            if (error && typeof error === 'object' && 'raw' in error) {
+                console.error('Stripe error details:', error.raw);
+            }
             const errorMessage = error instanceof Error ? error.message : 'Unknown error';
             return res.status(500).json({ message: `Error: ${errorMessage}` });
         }
@@ -385,19 +396,39 @@ class PaymentController {
     }
     static async success(req, res) {
         try {
+            const { session_id } = req.query;
+            if (session_id) {
+                try {
+                    const stripe = require('stripe')(process.env['STRIPE_SECRET_KEY']);
+                    const session = await stripe.checkout.sessions.retrieve(session_id);
+                    if (session.payment_status === 'paid') {
+                        const order = await models_1.Order.findOne({ where: { transaction_id: session_id } });
+                        if (order) {
+                            return res.json({
+                                success: true,
+                                message: 'Payment successful! Your order has been processed.',
+                                order_id: order.id,
+                                session_id: session_id
+                            });
+                        }
+                        else {
+                            return res.json({
+                                success: true,
+                                message: 'Payment successful! Your order is being processed.',
+                                session_id: session_id
+                            });
+                        }
+                    }
+                    else {
+                        return res.status(400).json({ message: 'Payment not completed' });
+                    }
+                }
+                catch (error) {
+                    console.error('Error retrieving Stripe session:', error);
+                    return res.status(500).json({ message: 'Error processing payment' });
+                }
+            }
             const { user_id, transaction_id, amount, payer_name, payer_email, order_type, payment_method, cartItems, promoCode, order_id, isGuestCheckout, guest_info } = req.body;
-            console.log('Payment success request body:', {
-                user_id,
-                transaction_id,
-                amount,
-                payer_name,
-                payer_email,
-                order_type,
-                payment_method,
-                cartItems: cartItems?.length,
-                promoCode,
-                order_id
-            });
             if (!transaction_id || !amount || !payer_name || !payer_email || !order_type || !payment_method || !cartItems) {
                 return res.status(400).json({ message: 'Missing required fields' });
             }
@@ -700,6 +731,212 @@ class PaymentController {
         catch (error) {
             console.error('Payment get error:', error);
             return res.status(500).json({ message: 'Server error' });
+        }
+    }
+    static async stripeWebhook(req, res) {
+        try {
+            const sig = req.headers['stripe-signature'];
+            const endpointSecret = process.env['STRIPE_WEBHOOK_SECRET'];
+            if (!endpointSecret) {
+                console.error('STRIPE_WEBHOOK_SECRET not configured');
+                return res.status(500).json({ message: 'Webhook secret not configured' });
+            }
+            let event;
+            try {
+                const stripe = require('stripe')(process.env['STRIPE_SECRET_KEY']);
+                event = stripe.webhooks.constructEvent(req.body, sig, endpointSecret);
+            }
+            catch (err) {
+                console.error('Webhook signature verification failed:', err.message);
+                return res.status(400).json({ message: 'Webhook signature verification failed' });
+            }
+            console.log('Received Stripe webhook event:', event.type);
+            switch (event.type) {
+                case 'checkout.session.completed':
+                    await PaymentController.handleCheckoutSessionCompleted(event.data.object);
+                    break;
+                case 'payment_intent.succeeded':
+                    await PaymentController.handlePaymentIntentSucceeded(event.data.object);
+                    break;
+                case 'invoice.payment_succeeded':
+                    await PaymentController.handleInvoicePaymentSucceeded(event.data.object);
+                    break;
+                default:
+                    console.log(`Unhandled event type: ${event.type}`);
+            }
+            return res.json({ received: true });
+        }
+        catch (error) {
+            console.error('Stripe webhook error:', error);
+            return res.status(500).json({ message: 'Webhook processing failed' });
+        }
+    }
+    static async handleCheckoutSessionCompleted(session) {
+        try {
+            console.log('Processing checkout session completed:', session.id);
+            const metadata = session.metadata;
+            const customerEmail = session.customer_details?.email;
+            const customerName = session.customer_details?.name;
+            if (!metadata || !customerEmail) {
+                console.error('Missing metadata or customer email in session');
+                return;
+            }
+            const userId = metadata.user_id;
+            const isGuestCheckout = metadata.isGuestCheckout === 'true';
+            const guestInfo = metadata.guest_info ? JSON.parse(metadata.guest_info) : null;
+            let cartItems = [];
+            if (metadata.cartItems) {
+                try {
+                    cartItems = JSON.parse(decodeURIComponent(metadata.cartItems));
+                }
+                catch (e) {
+                    console.error('Failed to parse cartItems from metadata');
+                }
+            }
+            if (cartItems.length === 0 && session.line_items?.data) {
+                cartItems = session.line_items.data.map((item) => ({
+                    service_name: item.description || item.price_data?.product_data?.name,
+                    price: item.amount_total / 100,
+                    qty: item.quantity,
+                    total_price: (item.amount_total * item.quantity) / 100,
+                    service_type: 'one_time'
+                }));
+            }
+            let user;
+            if (isGuestCheckout || userId === 'guest') {
+                let firstName, lastName;
+                if (guestInfo && guestInfo.first_name && guestInfo.last_name) {
+                    firstName = guestInfo.first_name;
+                    lastName = guestInfo.last_name;
+                }
+                else if (customerName) {
+                    const [firstNamePart, ...lastNameParts] = customerName.split(' ');
+                    firstName = firstNamePart;
+                    lastName = lastNameParts.join(' ') || 'Guest';
+                }
+                else {
+                    firstName = 'Guest';
+                    lastName = 'User';
+                }
+                user = await models_1.User.findOne({ where: { email: customerEmail } });
+                if (!user) {
+                    try {
+                        user = await models_1.User.create({
+                            first_name: firstName,
+                            last_name: lastName,
+                            email: customerEmail,
+                            phone_number: guestInfo?.phone || null,
+                            password: `guest_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`,
+                            role: 'guest',
+                            is_active: 1
+                        });
+                    }
+                    catch (error) {
+                        if (error.name === 'SequelizeUniqueConstraintError') {
+                            user = await models_1.User.findOne({ where: { email: customerEmail } });
+                        }
+                        else {
+                            throw error;
+                        }
+                    }
+                }
+            }
+            else {
+                user = await models_1.User.findByPk(userId);
+                if (!user) {
+                    console.error('User not found for ID:', userId);
+                    return;
+                }
+            }
+            if (!user) {
+                console.error('User not found or could not be created');
+                return;
+            }
+            const order = await models_1.Order.create({
+                user_id: user.id,
+                transaction_id: session.id,
+                amount: session.amount_total / 100,
+                currency: session.currency?.toUpperCase() || 'USD',
+                promocode: metadata.promoCode || null,
+                Order_status: 0,
+                is_active: 1,
+                payer_name: customerName || `${user.first_name} ${user.last_name}`,
+                payer_email: customerEmail,
+                payment_status: 'PAID',
+                payment_method: 'Stripe',
+                order_type: metadata.order_type || 'one_time',
+                order_reference_id: session.payment_intent || null
+            });
+            console.log('Order created with ID:', order.id);
+            for (const item of cartItems) {
+                await models_1.OrderItem.create({
+                    order_id: order.id,
+                    service_id: item.service_id || 0,
+                    name: item.service_name,
+                    price: item.price.toString(),
+                    quantity: item.qty.toString(),
+                    max_revision: parseInt(item.qty) * 3,
+                    total_price: item.total_price.toString(),
+                    service_type: item.service_type,
+                    admin_is_read: 0,
+                    user_is_read: 0
+                });
+            }
+            const orderItems = await models_1.OrderItem.findAll({
+                where: { order_id: order.id }
+            });
+            const userUrl = process.env['FRONTEND_URL'];
+            const adminUrl = process.env['ADMIN_URL'];
+            (0, EmailService_1.sendOrderSuccessEmail)({
+                name: `${user.first_name} ${user.last_name}`,
+                order_id: order.id,
+                message: 'Thank you for your purchase. Your order has been processed successfully.',
+                items: orderItems,
+                url: `${userUrl}/order/${order.id}`,
+                email: user.email
+            });
+            const admin = await models_1.User.findOne({ where: { role: 'admin' } });
+            if (admin) {
+                (0, EmailService_1.sendOrderSuccessEmail)({
+                    name: `${admin.first_name} ${admin.last_name}`,
+                    order_id: order.id,
+                    items: orderItems,
+                    message: 'New Order Arrived. All Engineers have been notified.',
+                    url: `${adminUrl}/order-detail/${order.id}`,
+                    email: admin.email
+                });
+            }
+            const engineers = await models_1.User.findAll({ where: { role: 'engineer' } });
+            for (const engineer of engineers) {
+                (0, EmailService_1.sendOrderSuccessEmail)({
+                    name: `${engineer.first_name} ${engineer.last_name}`,
+                    order_id: order.id,
+                    items: orderItems,
+                    url: `${adminUrl}/order-detail/${order.id}`,
+                    message: 'New Order Arrived. Click the link below and go to the dashboard.',
+                    email: engineer.email
+                });
+            }
+            console.log('Order processing completed successfully');
+        }
+        catch (error) {
+            console.error('Error handling checkout session completed:', error);
+        }
+    }
+    static async handlePaymentIntentSucceeded(paymentIntent) {
+        try {
+            console.log('Processing payment intent succeeded:', paymentIntent.id);
+        }
+        catch (error) {
+            console.error('Error handling payment intent succeeded:', error);
+        }
+    }
+    static async handleInvoicePaymentSucceeded(invoice) {
+        try {
+            console.log('Processing invoice payment succeeded:', invoice.id);
+        }
+        catch (error) {
+            console.error('Error handling invoice payment succeeded:', error);
         }
     }
 }

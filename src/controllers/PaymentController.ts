@@ -554,19 +554,6 @@ export class PaymentController {
         guest_info
       } = req.body;
 
-      console.log('Payment success request body:', {
-        user_id,
-        transaction_id,
-        amount,
-        payer_name,
-        payer_email,
-        order_type,
-        payment_method,
-        cartItems: cartItems?.length,
-        promoCode,
-        order_id
-      });
-
       // Validate required fields
       if (!transaction_id || !amount || !payer_name || !payer_email || !order_type || !payment_method || !cartItems) {
         return res.status(400).json({ message: 'Missing required fields' });

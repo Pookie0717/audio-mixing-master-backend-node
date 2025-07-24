@@ -6,6 +6,7 @@ Object.defineProperty(exports, "__esModule", { value: true });
 exports.AuthController = void 0;
 const jsonwebtoken_1 = __importDefault(require("jsonwebtoken"));
 const crypto_1 = __importDefault(require("crypto"));
+const bcryptjs_1 = __importDefault(require("bcryptjs"));
 const User_1 = __importDefault(require("../models/User"));
 const models_1 = require("../models");
 const EmailService_1 = require("../services/EmailService");
@@ -22,7 +23,7 @@ class AuthController {
             }
             if (phone_number) {
                 const existingUserByPhone = await User_1.default.findOne({ where: { phone_number } });
-                if (existingUserByPhone) {
+                if (existingUserByPhone && existingUserByPhone.role !== 'guest') {
                     return res.status(400).json({ message: 'User with this phone number already exists' });
                 }
             }
@@ -36,7 +37,7 @@ class AuthController {
                     password,
                     phone_number,
                     role: 'user',
-                    is_active: 1,
+                    is_active: 0,
                     email_verification_token: emailVerificationToken,
                 });
             }
@@ -45,10 +46,10 @@ class AuthController {
                     first_name,
                     last_name,
                     email,
-                    password,
+                    password: await bcryptjs_1.default.hash(password, 10),
                     phone_number,
                     role: 'user',
-                    is_active: 1,
+                    is_active: 0,
                     email_verification_token: emailVerificationToken,
                 }, {
                     where: { id: existingUserByEmail.id }

@@ -1,4 +1,4 @@
-import { Response } from 'express';
+import { Response, Request } from 'express';
 import { AuthRequest } from '../middleware/auth';
 export declare class PaymentController {
     static paypal(req: AuthRequest | any, res: Response): Promise<Response<any, Record<string, any>>>;
@@ -15,5 +15,9 @@ export declare class PaymentController {
     static refundPayment(req: AuthRequest, res: Response): Promise<Response<any, Record<string, any>>>;
     static getPaymentHistory(req: AuthRequest, res: Response): Promise<Response<any, Record<string, any>>>;
     static getPayment(req: AuthRequest, res: Response): Promise<Response<any, Record<string, any>>>;
+    static stripeWebhook(req: Request, res: Response): Promise<Response<any, Record<string, any>>>;
+    static handleCheckoutSessionCompleted(session: any): Promise<void>;
+    static handlePaymentIntentSucceeded(paymentIntent: any): Promise<void>;
+    static handleInvoicePaymentSucceeded(invoice: any): Promise<void>;
 }
 //# sourceMappingURL=PaymentController.d.ts.map

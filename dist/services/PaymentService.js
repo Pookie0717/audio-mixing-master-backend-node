@@ -16,7 +16,6 @@ const initializePaymentServices = async () => {
         const environment = process.env['PAYPAL_MODE'] === 'live'
             ? new checkout_server_sdk_1.default.core.LiveEnvironment(process.env['PAYPAL_CLIENT_ID'] || '', process.env['PAYPAL_CLIENT_SECRET'] || '')
             : new checkout_server_sdk_1.default.core.SandboxEnvironment(process.env['PAYPAL_CLIENT_ID'] || '', process.env['PAYPAL_CLIENT_SECRET'] || '');
-        console.log(process.env['PAYPAL_CLIENT_ID']);
         paypalClient = new checkout_server_sdk_1.default.core.PayPalHttpClient(environment);
         console.log('✅ Payment services initialized successfully');
     }
@@ -45,6 +44,11 @@ const createStripePaymentIntent = async (amount, currency = 'usd') => {
 exports.createStripePaymentIntent = createStripePaymentIntent;
 const createStripeSubscription = async (customerId, priceId) => {
     try {
+        console.log('PaymentService: Creating subscription with:', { customerId, priceId });
+        const price = await stripe.prices.retrieve(priceId);
+        if (price.type !== 'recurring') {
+            throw new Error('Provided price is not recurring. Subscriptions require a recurring price.');
+        }
         const subscription = await stripe.subscriptions.create({
             customer: customerId,
             items: [{ price: priceId }],
@@ -52,10 +56,14 @@ const createStripeSubscription = async (customerId, priceId) => {
             payment_settings: { save_default_payment_method: 'on_subscription' },
             expand: ['latest_invoice.payment_intent'],
         });
+        console.log('PaymentService: Subscription created successfully:', subscription.id);
         return subscription;
     }
     catch (error) {
-        console.error('Stripe subscription creation failed:', error);
+        console.error('PaymentService: Stripe subscription creation failed:', JSON.stringify(error, null, 2));
+        if (error && typeof error === 'object' && 'raw' in error) {
+            console.error('PaymentService: Stripe raw error:', error.raw);
+        }
         throw error;
     }
 };
