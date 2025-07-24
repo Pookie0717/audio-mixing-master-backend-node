@@ -21,7 +21,8 @@ jobs:
           ssh-keyscan -H ${{ secrets.HOST }} >> ~/.ssh/known_hosts
 
       - name: Debug secrets
-        run: echo "Deploying to: ${{ secrets.USERNAME }}@${{ secrets.HOST }}"
+        run: echo "Deploying to:${{ secrets.USERNAME }}@${{ secrets.HOST }}"
+
 
       - name: Deploy via SSH
         run: |
