@@ -1,6 +1,7 @@
 import { Request, Response } from 'express';
 import jwt from 'jsonwebtoken';
 import crypto from 'crypto';
+import bcrypt from 'bcryptjs';
 import User from '../models/User';
 import { Favourite, Service, Category, Label } from '../models';
 import { sendWelcomeEmail, sendPasswordResetEmail, sendEmailVerificationRequest } from '../services/EmailService';
@@ -18,14 +19,14 @@ export class AuthController {
 
       // Check if user already exists by email
       const existingUserByEmail = await User.findOne({ where: { email } });
-      if (existingUserByEmail) {
+      if (existingUserByEmail && existingUserByEmail.role !== 'guest') {
         return res.status(400).json({ message: 'User with this email already exists' });
       }
 
       // Check if user already exists by phone number (if phone_number is provided)
       if (phone_number) {
         const existingUserByPhone = await User.findOne({ where: { phone_number } });
-        if (existingUserByPhone) {
+        if (existingUserByPhone && existingUserByPhone.role !== 'guest') {
           return res.status(400).json({ message: 'User with this phone number already exists' });
         }
       }
@@ -34,16 +35,33 @@ export class AuthController {
       const emailVerificationToken = crypto.randomBytes(32).toString('hex');
 
       // Create user (password will be hashed automatically by model hooks)
-      const user = await User.create({
-        first_name,
-        last_name,
-        email,
-        password,
-        phone_number,
-        role: 'user',
-        is_active: 0, // Set to inactive until email is verified
-        email_verification_token: emailVerificationToken,
-      });
+      let user;
+      if(existingUserByEmail?.role !== 'guest') {
+        user = await User.create({
+          first_name,
+          last_name,
+          email,
+          password,
+          phone_number,
+          role: 'user',
+          is_active: 0,
+          email_verification_token: emailVerificationToken,
+        });
+      } else {
+        await User.update({
+          first_name,
+          last_name,
+          email,
+          password: await bcrypt.hash(password, 10),
+          phone_number,
+          role: 'user',
+          is_active: 0,
+          email_verification_token: emailVerificationToken,
+        }, {
+          where: { id: existingUserByEmail.id }
+        });
+        user = existingUserByEmail;
+      }
 
       // Generate JWT token
       const secret = process.env['JWT_SECRET'] || 'fallback-secret';
@@ -57,7 +75,7 @@ export class AuthController {
       try {
         const verificationUrl = `http://${process.env['FRONTEND_URL']}/verify-email/${user.id}/${emailVerificationToken}`;
         console.log(verificationUrl);
-        await sendEmailVerificationRequest({
+        sendEmailVerificationRequest({
           name: `${user.first_name} ${user.last_name}`,
           email: user.email,
           verificationUrl: verificationUrl

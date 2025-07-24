@@ -17,6 +17,7 @@ const AdminCouponController_1 = require("../controllers/AdminCouponController");
 const AdminGiftController_1 = require("../controllers/AdminGiftController");
 const AdminOrderController_1 = require("../controllers/AdminOrderController");
 const AdminBlogController_1 = require("../controllers/AdminBlogController");
+const RevisionController_1 = require("../controllers/RevisionController");
 const router = (0, express_1.Router)();
 const upload = (0, multer_1.default)({
     storage: multer_1.default.memoryStorage(),
@@ -101,5 +102,7 @@ router.get('/blog-categories', AdminBlogController_1.AdminBlogController.getCate
 router.post('/blog-categories', AdminBlogController_1.AdminBlogController.createCategory);
 router.put('/blog-categories/:id', AdminBlogController_1.AdminBlogController.updateCategory);
 router.delete('/blog-categories/:id', AdminBlogController_1.AdminBlogController.destroyCategory);
+router.post('/revisions/admin-flag/:id', auth_1.adminAuth, RevisionController_1.RevisionController.flagAdmin);
+router.post('/revisions/upload/:id', auth_1.adminAuth, upload.none(), RevisionController_1.RevisionController.upload);
 exports.default = router;
 //# sourceMappingURL=admin.js.map

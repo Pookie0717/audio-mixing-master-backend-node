@@ -61,8 +61,8 @@ class PaymentController {
     }
     static async stripePay(req, res) {
         try {
-            const { cart_items, amount, currency = 'USD', promoCode, user_id, order_type = 'one_time', payment_method_id, customerEmail, customerName, finalTotal, isGuestCheckout, guest_info } = req.body;
-            const cartItemsToUse = cart_items || cart_items;
+            const { cart_items, cartItems, amount, currency = 'USD', promoCode, user_id, order_type = 'one_time', payment_method_id, customerEmail, customerName, finalTotal, isGuestCheckout, guest_info } = req.body;
+            const cartItemsToUse = cart_items || cartItems;
             if (!cartItemsToUse || !amount) {
                 return res.status(400).json({ message: 'Cart items and amount are required' });
             }

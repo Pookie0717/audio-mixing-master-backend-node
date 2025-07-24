@@ -20,6 +20,7 @@ import { ServicesPromoCodeController } from '../controllers/ServicesPromoCodeCon
 import { PayPalController } from '../controllers/PayPalController';
 import { ExcelController } from '../controllers/ExcelController';
 import blogRoutes from './blog';
+import { RevisionController } from '../controllers/RevisionController';
 
 const router = Router();
 
@@ -101,11 +102,11 @@ router.delete('/cart/:serviceId', auth, CartController.remove);
 
 // Payment routes (protected)
 router.post('/stripe/pay', auth, PaymentController.stripePay);
-router.post('/stripe/pay/guest', PaymentController.stripePay); // Guest checkout - no auth required
+router.post('/stripe/pay/guest', optionalAuth, PaymentController.stripePay); // Guest checkout - no auth required
 router.post('/stripe/intent', auth, PaymentController.createPaymentIntent);
-router.post('/stripe/intent/guest', PaymentController.createPaymentIntent); // Guest checkout - no auth required
+router.post('/stripe/intent/guest',optionalAuth, PaymentController.createPaymentIntent); // Guest checkout - no auth required
 router.post('/stripe/subscribe', auth, PaymentController.stripeSubscribe);
-router.post('/stripe/subscribe/guest', PaymentController.stripeSubscribe); // Guest subscription - no auth required
+router.post('/stripe/subscribe/guest',optionalAuth, PaymentController.stripeSubscribe); // Guest subscription - no auth required
 router.post('/paypal', optionalAuth, PaymentController.paypal); // Works for both auth and guest users
 router.post('/create-subscription', auth, PaymentController.createSubscription);
 router.get('/fetch/order', auth, PaymentController.getOrderDetails);
@@ -113,7 +114,17 @@ router.get('/user-orders/:user_id', PaymentController.userOrders);
 router.post('/success', optionalAuth, PaymentController.success); // Works for both auth and guest users
 router.get('/cancel', optionalAuth, PaymentController.cancel); // Works for both auth and guest users
 
+// Stripe webhook endpoint (no auth required)
+router.post('/stripe/webhook', PaymentController.stripeWebhook);
+
+// Debug route for listing Stripe prices (for debugging purposes)
+
 // New payment processing route with the specified structure
+
+// REVISION ROUTES
+router.post('/revision', auth, RevisionController.store);
+router.post('/revisions/user-flag/:id', auth, RevisionController.flagUser);
+router.get('/revisions/data', auth, RevisionController.getData);
 
 // BLOG ROUTES
 router.use('/', blogRoutes);

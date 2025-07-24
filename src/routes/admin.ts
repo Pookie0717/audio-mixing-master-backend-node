@@ -12,6 +12,7 @@ import { AdminCouponController } from '../controllers/AdminCouponController';
 import { AdminGiftController } from '../controllers/AdminGiftController';
 import { AdminOrderController } from '../controllers/AdminOrderController';
 import { AdminBlogController } from '../controllers/AdminBlogController';
+import { RevisionController } from '../controllers/RevisionController';
 
 const router = Router();
 
@@ -125,5 +126,11 @@ router.get('/blog-categories', AdminBlogController.getCategories);
 router.post('/blog-categories', AdminBlogController.createCategory);
 router.put('/blog-categories/:id', AdminBlogController.updateCategory);
 router.delete('/blog-categories/:id', AdminBlogController.destroyCategory);
+
+//Revision
+router.post('/revisions/admin-flag/:id', adminAuth, RevisionController.flagAdmin);
+router.post('/revisions/upload/:id', adminAuth, upload.none(), RevisionController.upload);
+
+
 
 export default router; 

@@ -19,14 +19,14 @@ export class AdminOrderController {
       const whereConditions: any = {};
 
       // Add role-based filtering
-      if (req.user) {
-        const userRole = req.user.role?.toUpperCase();
-        if (userRole === 'ENGINEER') {
-          // Engineers can only see their own orders
-          whereConditions.user_id = req.user.id;
-        }
-        // Admins can see all orders, so no additional condition needed
-      }
+      // if (req.user) {
+      //   const userRole = req.user.role?.toUpperCase();
+      //   if (userRole === 'ENGINEER') {
+      //     // Engineers can only see their own orders
+      //     whereConditions.user_id = req.user.id;
+      //   }
+      //   // Admins can see all orders, so no additional condition needed
+      // }
 
       // Add search functionality
       if (search && search.trim()) {
@@ -217,12 +217,12 @@ export class AdminOrderController {
       }
 
       // Role-based access control
-      if (req.user) {
-        const userRole = req.user.role?.toUpperCase();
-        if (userRole === 'ENGINEER' && order.user_id !== req.user.id) {
-          return res.status(403).json({ error: 'Access denied. You can only view your own orders.' });
-        }
-      }
+      // if (req.user) {
+      //   const userRole = req.user.role?.toUpperCase();
+      //   if (userRole === 'ENGINEER' && order.user_id !== req.user.id) {
+      //     return res.status(403).json({ error: 'Access denied. You can only view your own orders.' });
+      //   }
+      // }
 
       // Fetch related data separately
       const [orderCoupons, revisions] = await Promise.all([

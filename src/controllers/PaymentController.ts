@@ -1,4 +1,4 @@
-import { Response } from 'express';
+import { Response, Request } from 'express';
 import { Payment, Order, User, Service, Cart, OrderItem, OrderCoupon, Revision } from '../models';
 import { AuthRequest } from '../middleware/auth';
 import { 
@@ -89,6 +89,7 @@ export class PaymentController {
     try {
       const { 
         cart_items, // Updated to match the request structure
+        cartItems, // Keep for backward compatibility
         amount, 
         currency = 'USD', 
         promoCode, 
@@ -96,7 +97,6 @@ export class PaymentController {
         order_type = 'one_time', 
         payment_method_id, 
         customerEmail, 
-        customerName,
         // New fields from the specified structure
         finalTotal,
         isGuestCheckout,
@@ -104,7 +104,7 @@ export class PaymentController {
       } = req.body;
 
       // Use cart_items if provided, otherwise fall back to cartItems for backward compatibility
-      const cartItemsToUse = cart_items || cart_items;
+      const cartItemsToUse = cart_items || cartItems;
 
       if (!cartItemsToUse || !amount) {
         return res.status(400).json({ message: 'Cart items and amount are required' });
@@ -112,7 +112,6 @@ export class PaymentController {
 
       // Handle both authenticated and guest users
       const userEmail = req.user?.email || customerEmail || (guest_info?.email);
-      const userName = req.user ? `${req.user.first_name} ${req.user.last_name}` : customerName || `${guest_info?.first_name} ${guest_info?.last_name}`;
       const currentUserId = req.user?.id || user_id || 'guest';
 
       // Use finalTotal if provided, otherwise use amount
@@ -164,6 +163,10 @@ export class PaymentController {
         // Prepare metadata with guest info if available
         const metadata: any = {
           user_id: currentUserId,
+          isGuestCheckout: isGuestCheckout || false,
+          order_type: order_type,
+          promoCode: promoCode || '',
+          cartItems: encodeURIComponent(JSON.stringify(cartItemsToUse)),
         };
 
         if (isGuestCheckout && guest_info) {
@@ -171,6 +174,7 @@ export class PaymentController {
           metadata.guest_last_name = guest_info.last_name;
           metadata.guest_email = guest_info.email;
           metadata.guest_phone = guest_info.phone;
+          metadata.guest_info = JSON.stringify(guest_info);
         }
 
         const session = await createStripeCheckoutSession({
@@ -179,7 +183,7 @@ export class PaymentController {
           allow_promotion_codes: false,
           metadata: metadata,
           customer_email: userEmail,
-          success_url: `${process.env['FRONTEND_URL']}/success?amount=${paymentAmount}&currency=${currency}&promoCode=${promoCode || ''}&cartItems=${encodeURIComponent(JSON.stringify(cartItemsToUse))}&user_id=${currentUserId}&transaction_id={CHECKOUT_SESSION_ID}&payer_name=${userName}&payer_email=${userEmail}&order_type=${order_type}&isGuestCheckout=${isGuestCheckout || false}&guest_info=${encodeURIComponent(JSON.stringify(guest_info || {}))}`,
+          success_url: `${process.env['FRONTEND_URL']}/success?session_id={CHECKOUT_SESSION_ID}`,
           cancel_url: `${process.env['FRONTEND_URL']}/cancel?amount=${paymentAmount}&currency=${currency}&promoCode=${promoCode || ''}&cartItems=${encodeURIComponent(JSON.stringify(cartItemsToUse))}&transaction_id={CHECKOUT_SESSION_ID}&isGuestCheckout=${isGuestCheckout || false}`,
         });
 
@@ -192,7 +196,6 @@ export class PaymentController {
     }
   }
 
-  // Stripe subscription (works for both auth and guest)
   static async stripeSubscribe(req: AuthRequest | any, res: Response) {
     try {
       const { service_id, customerId, priceId, customerEmail, customerName } = req.body;
@@ -207,8 +210,8 @@ export class PaymentController {
       }
 
       // Handle both authenticated and guest users
-      const userEmail = req.user?.email || customerEmail;
-      const userName = req.user ? `${req.user.first_name} ${req.user.last_name}` : customerName;
+      const userEmail = customerEmail;
+      const userName = customerName;
 
       // Create or get customer
       const stripe = require('stripe')(process.env['STRIPE_SECRET_KEY']);
@@ -224,21 +227,35 @@ export class PaymentController {
         });
       }
 
+      // Log before calling createStripeSubscription
+      console.log("About to call createStripeSubscription with:", {
+        customerId: customer.id,
+        priceId: priceId
+      });
+
       const subscription = await createStripeSubscription(customer.id, priceId);
+      console.log(`subscription: ${JSON.stringify(subscription)}`);
 
       return res.json({
         success: true,
         data: {
           subscriptionId: subscription.id,
           status: subscription.status,
-          customerId: customer.id,
           clientSecret: subscription.latest_invoice && typeof subscription.latest_invoice === 'object' 
             ? (subscription.latest_invoice as any).payment_intent?.client_secret 
             : undefined,
         },
       });
     } catch (error) {
-      console.error('Stripe subscription error:', error);
+      // Enhanced error logging
+      console.error('Stripe subscription error:', JSON.stringify(error, null, 2));
+      
+      // Log Stripe-specific error details
+      if (error && typeof error === 'object' && 'raw' in error) {
+        console.error('Stripe error details:', error.raw);
+      }
+      
+      
       const errorMessage = error instanceof Error ? error.message : 'Unknown error';
       return res.status(500).json({ message: `Error: ${errorMessage}` });
     }
@@ -483,9 +500,45 @@ export class PaymentController {
     }
   }
 
-  // PayPal success callback - matches Laravel implementation
+  // Success callback - handles both PayPal and Stripe
   static async success(req: AuthRequest | any, res: Response) {
     try {
+      const { session_id } = req.query;
+      
+      // If session_id is provided, this is a Stripe checkout success
+      if (session_id) {
+        try {
+          const stripe = require('stripe')(process.env['STRIPE_SECRET_KEY']);
+          const session = await stripe.checkout.sessions.retrieve(session_id as string);
+          
+          if (session.payment_status === 'paid') {
+            // Find the order by transaction_id (session_id)
+            const order = await Order.findOne({ where: { transaction_id: session_id } });
+            
+            if (order) {
+              return res.json({
+                success: true,
+                message: 'Payment successful! Your order has been processed.',
+                order_id: order.id,
+                session_id: session_id
+              });
+            } else {
+              return res.json({
+                success: true,
+                message: 'Payment successful! Your order is being processed.',
+                session_id: session_id
+              });
+            }
+          } else {
+            return res.status(400).json({ message: 'Payment not completed' });
+          }
+        } catch (error) {
+          console.error('Error retrieving Stripe session:', error);
+          return res.status(500).json({ message: 'Error processing payment' });
+        }
+      }
+
+      // Handle PayPal success (existing logic)
       const {
         user_id,
         transaction_id,
@@ -903,6 +956,248 @@ export class PaymentController {
     } catch (error) {
       console.error('Payment get error:', error);
       return res.status(500).json({ message: 'Server error' });
+    }
+  }
+
+  // Stripe webhook handler
+  static async stripeWebhook(req: Request, res: Response) {
+    try {
+      const sig = req.headers['stripe-signature'];
+      const endpointSecret = process.env['STRIPE_WEBHOOK_SECRET'];
+
+      if (!endpointSecret) {
+        console.error('STRIPE_WEBHOOK_SECRET not configured');
+        return res.status(500).json({ message: 'Webhook secret not configured' });
+      }
+
+      let event;
+      try {
+        const stripe = require('stripe')(process.env['STRIPE_SECRET_KEY']);
+        event = stripe.webhooks.constructEvent(req.body, sig as string, endpointSecret);
+      } catch (err: any) {
+        console.error('Webhook signature verification failed:', err.message);
+        return res.status(400).json({ message: 'Webhook signature verification failed' });
+      }
+
+      console.log('Received Stripe webhook event:', event.type);
+
+      // Handle the event
+      switch (event.type) {
+        case 'checkout.session.completed':
+          await PaymentController.handleCheckoutSessionCompleted(event.data.object);
+          break;
+        case 'payment_intent.succeeded':
+          await PaymentController.handlePaymentIntentSucceeded(event.data.object);
+          break;
+        case 'invoice.payment_succeeded':
+          await PaymentController.handleInvoicePaymentSucceeded(event.data.object);
+          break;
+        default:
+          console.log(`Unhandled event type: ${event.type}`);
+      }
+
+      return res.json({ received: true });
+    } catch (error) {
+      console.error('Stripe webhook error:', error);
+      return res.status(500).json({ message: 'Webhook processing failed' });
+    }
+  }
+
+  // Handle checkout session completed
+  static async handleCheckoutSessionCompleted(session: any) {
+    try {
+      console.log('Processing checkout session completed:', session.id);
+      
+      const metadata = session.metadata;
+      const customerEmail = session.customer_details?.email;
+      const customerName = session.customer_details?.name;
+      
+      if (!metadata || !customerEmail) {
+        console.error('Missing metadata or customer email in session');
+        return;
+      }
+
+      // Extract data from metadata
+      const userId = metadata.user_id;
+      const isGuestCheckout = metadata.isGuestCheckout === 'true';
+      const guestInfo = metadata.guest_info ? JSON.parse(metadata.guest_info) : null;
+      
+      // Parse cart items from metadata or use line items
+      let cartItems = [];
+      if (metadata.cartItems) {
+        try {
+          cartItems = JSON.parse(decodeURIComponent(metadata.cartItems));
+        } catch (e) {
+          console.error('Failed to parse cartItems from metadata');
+        }
+      }
+
+      // If no cart items in metadata, try to extract from line items
+      if (cartItems.length === 0 && session.line_items?.data) {
+        cartItems = session.line_items.data.map((item: any) => ({
+          service_name: item.description || item.price_data?.product_data?.name,
+          price: item.amount_total / 100, // Convert from cents
+          qty: item.quantity,
+          total_price: (item.amount_total * item.quantity) / 100,
+          service_type: 'one_time'
+        }));
+      }
+
+      // Create or find user
+      let user;
+      if (isGuestCheckout || userId === 'guest') {
+        // Handle guest user creation
+        let firstName, lastName;
+        
+        if (guestInfo && guestInfo.first_name && guestInfo.last_name) {
+          firstName = guestInfo.first_name;
+          lastName = guestInfo.last_name;
+        } else if (customerName) {
+          const [firstNamePart, ...lastNameParts] = customerName.split(' ');
+          firstName = firstNamePart;
+          lastName = lastNameParts.join(' ') || 'Guest';
+        } else {
+          firstName = 'Guest';
+          lastName = 'User';
+        }
+        
+        user = await User.findOne({ where: { email: customerEmail } });
+        if (!user) {
+          try {
+            user = await User.create({
+              first_name: firstName,
+              last_name: lastName,
+              email: customerEmail,
+              phone_number: guestInfo?.phone || null,
+              password: `guest_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`,
+              role: 'guest',
+              is_active: 1
+            });
+          } catch (error: any) {
+            if (error.name === 'SequelizeUniqueConstraintError') {
+              user = await User.findOne({ where: { email: customerEmail } });
+            } else {
+              throw error;
+            }
+          }
+        }
+      } else {
+        // Find existing user
+        user = await User.findByPk(userId);
+        if (!user) {
+          console.error('User not found for ID:', userId);
+          return;
+        }
+      }
+
+      // Create order
+      if (!user) {
+        console.error('User not found or could not be created');
+        return;
+      }
+
+      const order = await Order.create({
+        user_id: user.id,
+        transaction_id: session.id,
+        amount: session.amount_total / 100, // Convert from cents
+        currency: session.currency?.toUpperCase() || 'USD',
+        promocode: metadata.promoCode || null,
+        Order_status: 0,
+        is_active: 1,
+        payer_name: customerName || `${user.first_name} ${user.last_name}`,
+        payer_email: customerEmail,
+        payment_status: 'PAID',
+        payment_method: 'Stripe',
+        order_type: metadata.order_type || 'one_time',
+        order_reference_id: session.payment_intent || null
+      });
+
+      console.log('Order created with ID:', order.id);
+
+      // Create order items
+      for (const item of cartItems) {
+        await OrderItem.create({
+          order_id: order.id,
+          service_id: item.service_id || 0,
+          name: item.service_name,
+          price: item.price.toString(),
+          quantity: item.qty.toString(),
+          max_revision: parseInt(item.qty) * 3,
+          total_price: item.total_price.toString(),
+          service_type: item.service_type,
+          admin_is_read: 0,
+          user_is_read: 0
+        });
+      }
+
+      // Get order items for email
+      const orderItems = await OrderItem.findAll({
+        where: { order_id: order.id }
+      });
+
+      // Send emails
+      const userUrl = process.env['FRONTEND_URL'];
+      const adminUrl = process.env['ADMIN_URL'];
+
+      // Email to user
+      sendOrderSuccessEmail({
+        name: `${user.first_name} ${user.last_name}`,
+        order_id: order.id,
+        message: 'Thank you for your purchase. Your order has been processed successfully.',
+        items: orderItems,
+        url: `${userUrl}/order/${order.id}`,
+        email: user.email
+      });
+
+      // Email to admin
+      const admin = await User.findOne({ where: { role: 'admin' } });
+      if (admin) {
+        sendOrderSuccessEmail({
+          name: `${admin.first_name} ${admin.last_name}`,
+          order_id: order.id,
+          items: orderItems,
+          message: 'New Order Arrived. All Engineers have been notified.',
+          url: `${adminUrl}/order-detail/${order.id}`,
+          email: admin.email
+        });
+      }
+
+      // Email to engineers
+      const engineers = await User.findAll({ where: { role: 'engineer' } });
+      for (const engineer of engineers) {
+        sendOrderSuccessEmail({
+          name: `${engineer.first_name} ${engineer.last_name}`,
+          order_id: order.id,
+          items: orderItems,
+          url: `${adminUrl}/order-detail/${order.id}`,
+          message: 'New Order Arrived. Click the link below and go to the dashboard.',
+          email: engineer.email
+        });
+      }
+
+      console.log('Order processing completed successfully');
+    } catch (error) {
+      console.error('Error handling checkout session completed:', error);
+    }
+  }
+
+  // Handle payment intent succeeded
+  static async handlePaymentIntentSucceeded(paymentIntent: any) {
+    try {
+      console.log('Processing payment intent succeeded:', paymentIntent.id);
+      // This can be used for additional payment intent processing if needed
+    } catch (error) {
+      console.error('Error handling payment intent succeeded:', error);
+    }
+  }
+
+  // Handle invoice payment succeeded (for subscriptions)
+  static async handleInvoicePaymentSucceeded(invoice: any) {
+    try {
+      console.log('Processing invoice payment succeeded:', invoice.id);
+      // This can be used for subscription payment processing if needed
+    } catch (error) {
+      console.error('Error handling invoice payment succeeded:', error);
     }
   }
 } 

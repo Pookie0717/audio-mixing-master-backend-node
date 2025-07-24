@@ -1,5 +1,5 @@
 import { Response } from 'express';
-import { Order, OrderItem, Service } from '../models';
+import { Order, OrderItem, Service, Revision } from '../models';
 import { AuthRequest } from '../middleware/auth';
 
 export class OrderController {
@@ -24,7 +24,7 @@ export class OrderController {
         include: [
           { model: OrderItem, as: 'orderItems', include: [{ model: Service, as: 'service' }] },
         ],
-        order: [['createdAt', 'DESC']],
+        order: [['created_at', 'DESC']],
         limit: perPage,
         offset: offset,
       });
@@ -65,7 +65,22 @@ export class OrderController {
       if (!order) {
         return res.status(404).json({ message: 'Order not found' });
       }
-      return res.json({ success: true, data: { order } });
+
+      // Get revisions for this order
+      const revisions = await Revision.findAll({
+        where: { order_id: id },
+        order: [['created_at', 'DESC']]
+      });
+
+      return res.json({ 
+        success: true, 
+        data: { 
+          order: {
+            ...order.toJSON(),
+            revisions: revisions
+          }
+        } 
+      });
     } catch (error) {
       console.error('Order show error:', error);
       return res.status(500).json({ message: 'Server error' });

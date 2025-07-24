@@ -18,28 +18,55 @@ async function addIsActiveColumns() {
   try {
     console.log('Adding is_active columns to blog tables...');
 
-    // Add is_active column to blog_categories table
-    await sequelize.query(`
-      ALTER TABLE blog_categories 
-      ADD COLUMN is_active TINYINT(1) NOT NULL DEFAULT 1 
-      AFTER description
+    // Check if is_active column exists in blog_categories table
+    const [blogCategoriesColumns] = await sequelize.query(`
+      SHOW COLUMNS FROM blog_categories LIKE 'is_active'
     `);
-    console.log('✅ Added is_active column to blog_categories table');
+    
+    if (blogCategoriesColumns.length === 0) {
+      // Add is_active column to blog_categories table
+      await sequelize.query(`
+        ALTER TABLE blog_categories 
+        ADD COLUMN is_active TINYINT(1) NOT NULL DEFAULT 1 
+        AFTER description
+      `);
+      console.log('✅ Added is_active column to blog_categories table');
+    } else {
+      console.log('ℹ️  is_active column already exists in blog_categories table');
+    }
 
-    // Change is_published to TINYINT
-    await sequelize.query(`
-      ALTER TABLE blogs 
-      MODIFY COLUMN is_published TINYINT(1) NOT NULL DEFAULT 0
+    // Check if is_published column exists in blogs table
+    const [blogsColumns] = await sequelize.query(`
+      SHOW COLUMNS FROM blogs LIKE 'is_published'
     `);
-    console.log('✅ Changed is_published to TINYINT');
+    
+    if (blogsColumns.length > 0) {
+      // Change is_published to TINYINT
+      await sequelize.query(`
+        ALTER TABLE blogs 
+        MODIFY COLUMN is_published TINYINT(1) NOT NULL DEFAULT 0
+      `);
+      console.log('✅ Changed is_published to TINYINT');
+    } else {
+      console.log('ℹ️  is_published column does not exist in blogs table');
+    }
 
-    // Add is_active column to blogs table
-    await sequelize.query(`
-      ALTER TABLE blogs 
-      ADD COLUMN is_active TINYINT(1) NOT NULL DEFAULT 1 
-      AFTER is_published
+    // Check if is_active column exists in blogs table
+    const [blogsActiveColumns] = await sequelize.query(`
+      SHOW COLUMNS FROM blogs LIKE 'is_active'
     `);
-    console.log('✅ Added is_active column to blogs table');
+    
+    if (blogsActiveColumns.length === 0) {
+      // Add is_active column to blogs table
+      await sequelize.query(`
+        ALTER TABLE blogs 
+        ADD COLUMN is_active TINYINT(1) NOT NULL DEFAULT 1 
+        AFTER is_published
+      `);
+      console.log('✅ Added is_active column to blogs table');
+    } else {
+      console.log('ℹ️  is_active column already exists in blogs table');
+    }
 
     // Update existing records to have is_active = 1
     await sequelize.query(`

@@ -25,6 +25,7 @@ const ServicesPromoCodeController_1 = require("../controllers/ServicesPromoCodeC
 const PayPalController_1 = require("../controllers/PayPalController");
 const ExcelController_1 = require("../controllers/ExcelController");
 const blog_1 = __importDefault(require("./blog"));
+const RevisionController_1 = require("../controllers/RevisionController");
 const router = (0, express_1.Router)();
 router.post('/auth/register', AuthController_1.AuthController.register);
 router.post('/auth/login', AuthController_1.AuthController.login);
@@ -101,6 +102,9 @@ router.get('/fetch/order', auth_1.auth, PaymentController_1.PaymentController.ge
 router.get('/user-orders/:user_id', PaymentController_1.PaymentController.userOrders);
 router.post('/success', auth_1.optionalAuth, PaymentController_1.PaymentController.success);
 router.get('/cancel', auth_1.optionalAuth, PaymentController_1.PaymentController.cancel);
+router.post('/revision', auth_1.auth, RevisionController_1.RevisionController.store);
+router.post('/revisions/user-flag/:id', auth_1.auth, RevisionController_1.RevisionController.flagUser);
+router.get('/revisions/data', auth_1.auth, RevisionController_1.RevisionController.getData);
 router.use('/', blog_1.default);
 const admin_1 = __importDefault(require("./admin"));
 router.use('/admin', admin_1.default);

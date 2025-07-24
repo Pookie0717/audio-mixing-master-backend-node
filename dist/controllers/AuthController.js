@@ -17,7 +17,7 @@ class AuthController {
                 return res.status(400).json({ message: 'First name, last name, email, and password are required' });
             }
             const existingUserByEmail = await User_1.default.findOne({ where: { email } });
-            if (existingUserByEmail) {
+            if (existingUserByEmail && existingUserByEmail.role !== 'guest') {
                 return res.status(400).json({ message: 'User with this email already exists' });
             }
             if (phone_number) {
@@ -27,22 +27,40 @@ class AuthController {
                 }
             }
             const emailVerificationToken = crypto_1.default.randomBytes(32).toString('hex');
-            const user = await User_1.default.create({
-                first_name,
-                last_name,
-                email,
-                password,
-                phone_number,
-                role: 'user',
-                is_active: 0,
-                email_verification_token: emailVerificationToken,
-            });
+            let user;
+            if (existingUserByEmail?.role !== 'guest') {
+                user = await User_1.default.create({
+                    first_name,
+                    last_name,
+                    email,
+                    password,
+                    phone_number,
+                    role: 'user',
+                    is_active: 1,
+                    email_verification_token: emailVerificationToken,
+                });
+            }
+            else {
+                await User_1.default.update({
+                    first_name,
+                    last_name,
+                    email,
+                    password,
+                    phone_number,
+                    role: 'user',
+                    is_active: 1,
+                    email_verification_token: emailVerificationToken,
+                }, {
+                    where: { id: existingUserByEmail.id }
+                });
+                user = existingUserByEmail;
+            }
             const secret = process.env['JWT_SECRET'] || 'fallback-secret';
             const token = jsonwebtoken_1.default.sign({ id: user.id }, secret, { expiresIn: '7d' });
             try {
                 const verificationUrl = `http://${process.env['FRONTEND_URL']}/verify-email/${user.id}/${emailVerificationToken}`;
                 console.log(verificationUrl);
-                await (0, EmailService_1.sendEmailVerificationRequest)({
+                (0, EmailService_1.sendEmailVerificationRequest)({
                     name: `${user.first_name} ${user.last_name}`,
                     email: user.email,
                     verificationUrl: verificationUrl

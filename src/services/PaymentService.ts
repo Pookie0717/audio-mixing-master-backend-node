@@ -45,6 +45,14 @@ export const createStripePaymentIntent = async (amount: number, currency: string
 
 export const createStripeSubscription = async (customerId: string, priceId: string) => {
   try {
+    console.log('PaymentService: Creating subscription with:', { customerId, priceId });
+
+    // Validate that the price is recurring before creating subscription
+    const price = await stripe.prices.retrieve(priceId);
+    if (price.type !== 'recurring') {
+      throw new Error('Provided price is not recurring. Subscriptions require a recurring price.');
+    }
+
     const subscription = await stripe.subscriptions.create({
       customer: customerId,
       items: [{ price: priceId }],
@@ -53,9 +61,16 @@ export const createStripeSubscription = async (customerId: string, priceId: stri
       expand: ['latest_invoice.payment_intent'],
     });
 
+    console.log('PaymentService: Subscription created successfully:', subscription.id);
     return subscription;
   } catch (error) {
-    console.error('Stripe subscription creation failed:', error);
+    console.error('PaymentService: Stripe subscription creation failed:', JSON.stringify(error, null, 2));
+    
+    // Log additional Stripe error details
+    if (error && typeof error === 'object' && 'raw' in error) {
+      console.error('PaymentService: Stripe raw error:', error.raw);
+    }
+    
     throw error;
   }
 };

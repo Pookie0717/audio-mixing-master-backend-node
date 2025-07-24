@@ -18,7 +18,7 @@ class OrderController {
                 include: [
                     { model: models_1.OrderItem, as: 'orderItems', include: [{ model: models_1.Service, as: 'service' }] },
                 ],
-                order: [['createdAt', 'DESC']],
+                order: [['created_at', 'DESC']],
                 limit: perPage,
                 offset: offset,
             });
@@ -56,7 +56,19 @@ class OrderController {
             if (!order) {
                 return res.status(404).json({ message: 'Order not found' });
             }
-            return res.json({ success: true, data: { order } });
+            const revisions = await models_1.Revision.findAll({
+                where: { order_id: id },
+                order: [['created_at', 'DESC']]
+            });
+            return res.json({
+                success: true,
+                data: {
+                    order: {
+                        ...order.toJSON(),
+                        revisions: revisions
+                    }
+                }
+            });
         }
         catch (error) {
             console.error('Order show error:', error);
