@@ -20,11 +20,6 @@ jobs:
           chmod 600 ~/.ssh/id_rsa
           ssh-keyscan -H ${{ secrets.HOST }} >> ~/.ssh/known_hosts
 
-      - name: Debug secrets
-        run: |
-          echo "USER: ${{ secrets.USERNAME }}"
-          echo "HOST: ${{ secrets.HOST }}"
-
       - name: Deploy via SSH
         run: |
           ssh ${{ secrets.USERNAME }}@${{ secrets.HOST }} << 'EOF'
